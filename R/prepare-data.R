@@ -63,11 +63,18 @@ prepare_pp_data <- function(
     )
   }
 
+  dummy_intensity <- NULL
+
+  if (objective %in% c("logistic", "weighted_logistic")) {
+    dummy_intensity <- extract_dummy_intensity(Q)
+  }
+
   new_gbpp_data(
     X = X,
     y = y,
     locations = locations,
     quadrature_weight = quadrature_weight,
+    dummy_intensity = dummy_intensity,
     statistical_weight = statistical_weight,
     type = type,
     metadata = list(

@@ -111,3 +111,73 @@ test_that("prepare_pp_data converts a planar quadrature scheme", {
     "planar"
   )
 })
+
+test_that("prepare_pp_data extracts dummy intensity for logistic objective", {
+
+  W <- spatstat.geom::owin(
+    xrange = c(0, 1),
+    yrange = c(0, 1)
+  )
+
+  pp <- spatstat.random::runifpoint(
+    n = 5,
+    win = W
+  )
+
+  Q <- spatstat.geom::quadscheme.logi(
+    pp,
+    dummytype = "grid",
+    nd = 10
+  )
+
+  X <- data.frame(
+    x1 = seq_len(length(spatstat.geom::is.data(Q)))
+  )
+
+  data <- prepare_pp_data(
+    Q = Q,
+    X = X,
+    objective = "logistic"
+  )
+
+  expect_type(data$dummy_intensity, "double")
+  expect_length(
+    data$dummy_intensity,
+    length(data$y)
+  )
+
+  expect_equal(
+    data$dummy_intensity,
+    rep(Q$param$rho, length(data$y))
+  )
+})
+
+test_that("prepare_pp_data does not create dummy intensity for Poisson objective", {
+
+  W <- spatstat.geom::owin(
+    xrange = c(0, 1),
+    yrange = c(0, 1)
+  )
+
+  pp <- spatstat.random::runifpoint(
+    n = 5,
+    win = W
+  )
+
+  Q <- spatstat.geom::quadscheme(
+    pp,
+    nd = 10
+  )
+
+  X <- data.frame(
+    x1 = seq_len(length(spatstat.geom::is.data(Q)))
+  )
+
+  data <- prepare_pp_data(
+    Q = Q,
+    X = X,
+    objective = "poisson"
+  )
+
+  expect_null(data$dummy_intensity)
+})
