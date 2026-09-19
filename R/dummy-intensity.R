@@ -4,7 +4,6 @@
 #'
 #' @return A numeric vector with one dummy-process intensity value for each quadrature point.
 #' @keywords internal
-
 extract_dummy_intensity <- function(Q) {
 
   if (!inherits(Q, "quad")) {

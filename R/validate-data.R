@@ -1,3 +1,16 @@
+#' Validate a GBPP data object
+#'
+#' Checks the structure and required components of a `gbpp_data` object.
+#' When an objective is supplied, also checks that the data object contains
+#' the quantities required by that objective.
+#'
+#' @param data A `gbpp_data` object to validate.
+#' @param objective Optional objective used to determine required data
+#'   components. One of `"poisson"`, `"weighted_poisson"`, `"logistic"`,
+#'   or `"weighted_logistic"`.
+#'
+#' @return Invisibly returns `TRUE` if the data object passes validation.
+#' @keywords internal
 validate_gbpp_data <- function(data, objective = NULL) {
   if (!inherits(data, "gbpp_data")) {
     stop("`data` must be a `gbpp_data` object.", call. = FALSE)

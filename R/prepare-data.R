@@ -8,7 +8,6 @@
 #'
 #' @return An object of class `gbpp_data`.
 #' @keywords internal
-
 prepare_pp_data <- function(
     Q,
     X,

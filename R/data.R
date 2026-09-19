@@ -12,7 +12,6 @@
 #'
 #' @returns An object of class `gbpp_data`.
 #' @keywords internal
-
 new_gbpp_data <- function(
     X,
     y,
