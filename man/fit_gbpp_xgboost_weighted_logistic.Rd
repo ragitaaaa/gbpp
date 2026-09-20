@@ -2,7 +2,7 @@
 % Please edit documentation in R/backend-xgboost.R
 \name{fit_gbpp_xgboost_weighted_logistic}
 \alias{fit_gbpp_xgboost_weighted_logistic}
-\title{Fit a GBPP weighted logistic model using XGBoost}
+\title{Fit a GBPP XGBoost weighted Logistic model}
 \usage{
 fit_gbpp_xgboost_weighted_logistic(
   data,
@@ -11,19 +11,15 @@ fit_gbpp_xgboost_weighted_logistic(
 )
 }
 \arguments{
-\item{data}{A \code{gbpp_data} object prepared for the
-\code{"weighted_logistic"} objective.}
+\item{data}{A \code{gbpp_data} object.}
 
-\item{params}{A named list of XGBoost training parameters.}
+\item{params}{A list of XGBoost parameters.}
 
-\item{num_boost_round}{Number of boosting iterations.}
+\item{num_boost_round}{Number of boosting rounds.}
 }
 \value{
-A Python XGBoost Booster object.
+A fitted XGBoost Booster.
 }
 \description{
-Fits a gradient boosting model for a spatial point process using
-the weighted logistic objective implemented as a custom XGBoost
-objective function.
+Fit a GBPP XGBoost weighted Logistic model
 }
-\keyword{internal}

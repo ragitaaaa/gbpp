@@ -2,7 +2,7 @@
 % Please edit documentation in R/backend-xgboost.R
 \name{make_xgboost_weighted_poisson_objective}
 \alias{make_xgboost_weighted_poisson_objective}
-\title{Create an XGBoost custom objective for the GBPP weighted Poisson loss}
+\title{Create XGBoost weighted Poisson objective}
 \usage{
 make_xgboost_weighted_poisson_objective(quadrature_weight, statistical_weight)
 }
@@ -12,10 +12,9 @@ make_xgboost_weighted_poisson_objective(quadrature_weight, statistical_weight)
 \item{statistical_weight}{Numeric vector of statistical weights.}
 }
 \value{
-A Python callable suitable for \code{xgboost::train()}.
+A Python callable implementing the weighted GBPP Poisson objective.
 }
 \description{
-Creates a Python callable implementing the GBPP weighted Poisson
-gradient and Hessian.
+Create XGBoost weighted Poisson objective
 }
 \keyword{internal}

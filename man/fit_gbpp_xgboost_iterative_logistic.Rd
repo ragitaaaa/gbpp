@@ -2,7 +2,7 @@
 % Please edit documentation in R/backend-xgboost.R
 \name{fit_gbpp_xgboost_iterative_logistic}
 \alias{fit_gbpp_xgboost_iterative_logistic}
-\title{Fit an iteratively weighted Logistic GBPP model using XGBoost}
+\title{Fit a GBPP XGBoost iterative Logistic model}
 \usage{
 fit_gbpp_xgboost_iterative_logistic(
   data,
@@ -11,19 +11,15 @@ fit_gbpp_xgboost_iterative_logistic(
 )
 }
 \arguments{
-\item{data}{A \code{gbpp_data} object prepared for the
-\code{"iterative_logistic"} objective.}
+\item{data}{A \code{gbpp_data} object.}
 
-\item{params}{A named list of XGBoost training parameters.}
+\item{params}{A list of XGBoost parameters.}
 
-\item{num_boost_round}{Number of boosting iterations.}
+\item{num_boost_round}{Number of boosting rounds.}
 }
 \value{
-A Python XGBoost Booster object.
+A fitted XGBoost Booster.
 }
 \description{
-Fits a spatial point-process intensity model using the iteratively
-weighted Logistic objective. The spatial dependence-adjusted weight
-is recalculated from the current model prediction during boosting.
+Fit a GBPP XGBoost iterative Logistic model
 }
-\keyword{internal}

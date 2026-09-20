@@ -2,18 +2,17 @@
 % Please edit documentation in R/backend-xgboost.R
 \name{make_xgboost_logistic_objective}
 \alias{make_xgboost_logistic_objective}
-\title{Create an XGBoost custom objective for the GBPP logistic loss}
+\title{Create XGBoost Logistic objective}
 \usage{
 make_xgboost_logistic_objective(dummy_intensity)
 }
 \arguments{
-\item{dummy_intensity}{Numeric vector of dummy-process intensities.}
+\item{dummy_intensity}{Numeric vector of dummy intensities.}
 }
 \value{
-A Python callable suitable for \code{xgboost::train()}.
+A Python callable implementing the GBPP Logistic objective.
 }
 \description{
-Creates a Python callable implementing the GBPP logistic
-gradient and Hessian.
+Create XGBoost Logistic objective
 }
 \keyword{internal}

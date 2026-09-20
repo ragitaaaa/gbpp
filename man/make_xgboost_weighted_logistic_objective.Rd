@@ -2,24 +2,19 @@
 % Please edit documentation in R/backend-xgboost.R
 \name{make_xgboost_weighted_logistic_objective}
 \alias{make_xgboost_weighted_logistic_objective}
-\title{Create an XGBoost weighted logistic objective for GBPP}
+\title{Create XGBoost weighted Logistic objective}
 \usage{
 make_xgboost_weighted_logistic_objective(dummy_intensity, statistical_weight)
 }
 \arguments{
-\item{dummy_intensity}{Numeric vector containing the dummy-process
-intensity at each quadrature point.}
+\item{dummy_intensity}{Numeric vector of dummy intensities.}
 
-\item{statistical_weight}{Numeric vector containing the fixed
-statistical/spatial weight at each quadrature point.}
+\item{statistical_weight}{Numeric vector of statistical weights.}
 }
 \value{
-A Python callable suitable for use as a custom XGBoost
-objective.
+A Python callable implementing the weighted GBPP Logistic objective.
 }
 \description{
-Creates a custom XGBoost objective function for the weighted logistic
-point-process model. The objective uses a fixed statistical/spatial
-weight for each quadrature point.
+Create XGBoost weighted Logistic objective
 }
 \keyword{internal}

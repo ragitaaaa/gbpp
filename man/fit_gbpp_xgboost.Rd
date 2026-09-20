@@ -2,14 +2,14 @@
 % Please edit documentation in R/backend-xgboost.R
 \name{fit_gbpp_xgboost}
 \alias{fit_gbpp_xgboost}
-\title{Fit a GBPP Poisson model using XGBoost}
+\title{Fit a GBPP XGBoost Poisson model}
 \usage{
 fit_gbpp_xgboost(data, params = list(), nrounds = 100)
 }
 \arguments{
 \item{data}{A \code{gbpp_data} object.}
 
-\item{params}{Named list of XGBoost parameters.}
+\item{params}{A list of XGBoost parameters.}
 
 \item{nrounds}{Number of boosting rounds.}
 }
@@ -17,6 +17,5 @@ fit_gbpp_xgboost(data, params = list(), nrounds = 100)
 A fitted XGBoost Booster.
 }
 \description{
-Fit a GBPP Poisson model using XGBoost
+Fit a GBPP XGBoost Poisson model
 }
-\keyword{internal}

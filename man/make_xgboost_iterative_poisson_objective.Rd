@@ -2,7 +2,7 @@
 % Please edit documentation in R/backend-xgboost.R
 \name{make_xgboost_iterative_poisson_objective}
 \alias{make_xgboost_iterative_poisson_objective}
-\title{Create an XGBoost iteratively weighted Poisson objective for GBPP}
+\title{Create XGBoost iterative Poisson objective}
 \usage{
 make_xgboost_iterative_poisson_objective(
   quadrature_weight,
@@ -10,19 +10,14 @@ make_xgboost_iterative_poisson_objective(
 )
 }
 \arguments{
-\item{quadrature_weight}{Numeric vector of Berman-Turner
-quadrature weights.}
+\item{quadrature_weight}{Numeric vector of quadrature weights.}
 
-\item{interaction_integral}{Numeric vector containing the spatial
-interaction integral for each quadrature point.}
+\item{interaction_integral}{Numeric vector of interaction integrals.}
 }
 \value{
-A Python callable suitable for use as a custom XGBoost
-objective.
+A Python callable implementing the iterative GBPP Poisson objective.
 }
 \description{
-Creates a custom XGBoost objective in which the spatial
-dependence-adjusted weight is recalculated from the current
-log-intensity prediction.
+Create XGBoost iterative Poisson objective
 }
 \keyword{internal}

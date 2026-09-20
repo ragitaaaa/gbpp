@@ -2,7 +2,7 @@
 % Please edit documentation in R/backend-xgboost.R
 \name{make_xgboost_iterative_logistic_objective}
 \alias{make_xgboost_iterative_logistic_objective}
-\title{Create an XGBoost iteratively weighted Logistic objective for GBPP}
+\title{Create XGBoost iterative Logistic objective}
 \usage{
 make_xgboost_iterative_logistic_objective(
   dummy_intensity,
@@ -10,19 +10,14 @@ make_xgboost_iterative_logistic_objective(
 )
 }
 \arguments{
-\item{dummy_intensity}{Numeric vector containing the dummy-process
-intensity at each quadrature point.}
+\item{dummy_intensity}{Numeric vector of dummy intensities.}
 
-\item{interaction_integral}{Numeric vector containing the spatial
-interaction integral for each quadrature point.}
+\item{interaction_integral}{Numeric vector of interaction integrals.}
 }
 \value{
-A Python callable suitable for use as a custom XGBoost
-objective.
+A Python callable implementing the iterative GBPP Logistic objective.
 }
 \description{
-Creates a custom XGBoost objective in which the spatial
-dependence-adjusted weight is recalculated from the current
-log-intensity prediction.
+Create XGBoost iterative Logistic objective
 }
 \keyword{internal}

@@ -2,14 +2,14 @@
 % Please edit documentation in R/backend-xgboost.R
 \name{fit_gbpp_xgboost_logistic}
 \alias{fit_gbpp_xgboost_logistic}
-\title{Fit a GBPP logistic model using XGBoost}
+\title{Fit a GBPP XGBoost Logistic model}
 \usage{
 fit_gbpp_xgboost_logistic(data, params = list(), nrounds = 100)
 }
 \arguments{
 \item{data}{A \code{gbpp_data} object.}
 
-\item{params}{Named list of XGBoost parameters.}
+\item{params}{A list of XGBoost parameters.}
 
 \item{nrounds}{Number of boosting rounds.}
 }
@@ -17,6 +17,5 @@ fit_gbpp_xgboost_logistic(data, params = list(), nrounds = 100)
 A fitted XGBoost Booster.
 }
 \description{
-Fit a GBPP logistic model using XGBoost
+Fit a GBPP XGBoost Logistic model
 }
-\keyword{internal}
