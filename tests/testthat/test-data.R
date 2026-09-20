@@ -109,3 +109,50 @@ test_that("weighted objectives require statistical weights", {
     "statistical_weight"
   )
 })
+
+test_that("iterative Poisson requires interaction_integral", {
+
+  data <- new_gbpp_data(
+    X = data.frame(
+      x1 = c(1, 2),
+      x2 = c(2, 1)
+    ),
+    y = c(1, 0),
+    locations = data.frame(
+      x = c(0, 1),
+      y = c(0, 1)
+    ),
+    quadrature_weight = c(
+      0.25,
+      0.25
+    )
+  )
+
+  expect_error(
+    validate_gbpp_data(
+      data,
+      objective = "iterative_poisson"
+    ),
+    "`interaction_integral` is required"
+  )
+})
+
+test_that("interaction_integral must match number of observations", {
+
+  expect_error(
+    new_gbpp_data(
+      X = data.frame(
+        x1 = c(1, 2),
+        x2 = c(2, 1)
+      ),
+      y = c(1, 0),
+      locations = data.frame(
+        x = c(0, 1),
+        y = c(0, 1)
+      ),
+      interaction_integral = 1:3
+    ) |>
+      validate_gbpp_data(),
+    "`interaction_integral` must have one value per observation"
+  )
+})

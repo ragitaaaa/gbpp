@@ -6,6 +6,7 @@
 #' @param quadrature_weight Berman-Turner quadrature weights.
 #' @param dummy_intensity Dummy-process intensity for logistic objectives.
 #' @param statistical_weight Spatial/dependence weights for weighted objectives.
+#' @param interaction_integral Integral part for dynamic weighted likelihood loss.
 #' @param window Observation window or linear network.
 #' @param type Spatial domain type: `"planar"` or `"network"`.
 #' @param metadata Additional metadata.
@@ -19,6 +20,7 @@ new_gbpp_data <- function(
     quadrature_weight = NULL,
     dummy_intensity = NULL,
     statistical_weight = NULL,
+    interaction_integral = NULL,
     window = NULL,
     type = c("planar", "network"),
     metadata = list()
@@ -33,6 +35,7 @@ new_gbpp_data <- function(
       quadrature_weight = quadrature_weight,
       dummy_intensity = dummy_intensity,
       statistical_weight = statistical_weight,
+      interaction_integral = interaction_integral,
       window = window,
       type = type,
       metadata = metadata

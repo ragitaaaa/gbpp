@@ -198,3 +198,113 @@ test_that("Logistic derivatives remain finite for large predictions", {
   expect_true(all(is.finite(result$gradient)))
   expect_true(all(is.finite(result$hessian)))
 })
+
+test_that("iterative Poisson objective matches theoretical derivatives", {
+
+  data <- new_gbpp_data(
+    X = data.frame(
+      x1 = c(1, 2, 3, 4),
+      x2 = c(4, 3, 2, 1)
+    ),
+    y = c(1, 0, 1, 0),
+    locations = data.frame(
+      x = c(0, 1, 2, 3),
+      y = c(0, 1, 2, 3)
+    ),
+    quadrature_weight = c(
+      0.2,
+      0.3,
+      0.4,
+      0.5
+    ),
+    interaction_integral = c(
+      0,
+      0.5,
+      1,
+      2
+    )
+  )
+
+  prediction <- c(
+    0,
+    0,
+    0,
+    0
+  )
+
+  result <- gbpp_objective(
+    data = data,
+    prediction = prediction,
+    objective = "iterative_poisson"
+  )
+
+  expected_weight <- c(
+    1,
+    2 / 3,
+    1 / 2,
+    1 / 3
+  )
+
+  expected_gradient <- c(
+    -0.8,
+    0.2,
+    -0.3,
+    1 / 6
+  )
+
+  expected_hessian <- c(
+    0.2,
+    0.2,
+    0.2,
+    1 / 6
+  )
+
+  expect_equal(
+    result$weight,
+    expected_weight,
+    tolerance = 1e-12
+  )
+
+  expect_equal(
+    result$gradient,
+    expected_gradient,
+    tolerance = 1e-12
+  )
+
+  expect_equal(
+    result$hessian,
+    expected_hessian,
+    tolerance = 1e-12
+  )
+})
+
+test_that("iterative Poisson objective is available through gbpp_objective", {
+
+  data <- new_gbpp_data(
+    X = data.frame(
+      x1 = c(1, 2),
+      x2 = c(2, 1)
+    ),
+    y = c(1, 0),
+    locations = data.frame(
+      x = c(0, 1),
+      y = c(0, 1)
+    ),
+    quadrature_weight = c(
+      0.25,
+      0.25
+    ),
+    interaction_integral = c(
+      0,
+      1
+    )
+  )
+
+  expect_no_error(
+    gbpp_objective(
+      data = data,
+      prediction = c(0, 0),
+      objective = "iterative_poisson"
+    )
+  )
+})

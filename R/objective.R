@@ -12,7 +12,8 @@ gbpp_objective <- function(
       "poisson",
       "weighted_poisson",
       "logistic",
-      "weighted_logistic"
+      "weighted_logistic",
+      "iterative_poisson"
     )
 ) {
 
@@ -70,6 +71,13 @@ gbpp_objective <- function(
 
     weighted_logistic = {
       calculate_weighted_logistic_derivatives(
+        data = data,
+        prediction = prediction
+      )
+    },
+
+    iterative_poisson = {
+      calculate_iterative_poisson_derivatives(
         data = data,
         prediction = prediction
       )
@@ -154,5 +162,50 @@ calculate_weighted_logistic_derivatives <- function(data, prediction) {
   list(
     gradient = gradient,
     hessian = hessian
+  )
+}
+
+#' Calculate derivatives for the iteratively weighted Poisson objective
+#'
+#' Calculates the gradient and Hessian of the iteratively weighted
+#' Poisson objective using the current log-intensity predictions.
+#' The spatial dependence weight is recalculated from the current
+#' intensity at each objective evaluation.
+#'
+#' @param data A `gbpp_data` object containing `interaction_integral`.
+#' @param prediction Numeric vector of current predicted log-intensities.
+#'
+#' @return A list containing `gradient`, `hessian`, and `weight`.
+#'
+#' @keywords internal
+calculate_iterative_poisson_derivatives <- function(
+    data,
+    prediction
+) {
+
+  phi <- pmin(
+    pmax(prediction, -50),
+    50
+  )
+
+  lambda <- exp(phi)
+
+  weight <- calculate_iterative_poisson_weight(
+    prediction = phi,
+    interaction_integral = data$interaction_integral
+  )
+
+  gradient <- weight * (
+    data$quadrature_weight * lambda - data$y
+  )
+
+  hessian <- weight *
+    data$quadrature_weight *
+    lambda
+
+  list(
+    gradient = gradient,
+    hessian = hessian,
+    weight = weight
   )
 }

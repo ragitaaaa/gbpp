@@ -521,3 +521,214 @@ test_that("XGBoost weighted logistic model can be trained", {
     all(is.finite(predictions))
   )
 })
+
+test_that(
+  "XGBoost iterative Poisson objective matches GBPP derivatives",
+  {
+
+    data <- new_gbpp_data(
+      X = data.frame(
+        x1 = c(1, 2, 3, 4),
+        x2 = c(4, 3, 2, 1)
+      ),
+      y = c(1, 0, 1, 0),
+      locations = data.frame(
+        x = c(0, 1, 2, 3),
+        y = c(0, 1, 2, 3)
+      ),
+      quadrature_weight = c(
+        0.2,
+        0.3,
+        0.4,
+        0.5
+      ),
+      interaction_integral = c(
+        0,
+        0.5,
+        1,
+        2
+      )
+    )
+
+    prediction <- c(
+      0,
+      0,
+      0,
+      0
+    )
+
+    expected <- gbpp_objective(
+      data = data,
+      prediction = prediction,
+      objective = "iterative_poisson"
+    )
+
+    objective <- make_xgboost_iterative_poisson_objective(
+      quadrature_weight = data$quadrature_weight,
+      interaction_integral = data$interaction_integral
+    )
+
+    xgb <- reticulate::import("xgboost")
+
+    dtrain <- xgb$DMatrix(
+      data = as.matrix(data$X),
+      label = as.numeric(data$y)
+    )
+
+    result <- objective(
+      reticulate::r_to_py(prediction),
+      dtrain
+    )
+
+    gradient <- as.numeric(
+      reticulate::py_to_r(result[[1]])
+    )
+
+    hessian <- as.numeric(
+      reticulate::py_to_r(result[[2]])
+    )
+
+    expect_equal(
+      gradient,
+      expected$gradient,
+      tolerance = 1e-12
+    )
+
+    expect_equal(
+      hessian,
+      expected$hessian,
+      tolerance = 1e-12
+    )
+  }
+)
+
+test_that(
+  "XGBoost iteratively weighted Poisson model can be trained",
+  {
+
+    data <- new_gbpp_data(
+      X = data.frame(
+        x1 = c(1, 2, 3, 4, 5, 6),
+        x2 = c(6, 5, 4, 3, 2, 1)
+      ),
+      y = c(1, 0, 1, 0, 1, 0),
+      locations = data.frame(
+        x = c(0, 1, 2, 3, 4, 5),
+        y = c(0, 1, 2, 3, 4, 5)
+      ),
+      quadrature_weight = c(
+        0.10,
+        0.15,
+        0.20,
+        0.15,
+        0.20,
+        0.20
+      ),
+      interaction_integral = c(
+        0.00,
+        0.25,
+        0.50,
+        0.75,
+        0.25,
+        0.50
+      )
+    )
+
+    model <- fit_gbpp_xgboost_iterative_poisson(
+      data = data,
+      params = list(
+        eta = 0.1,
+        max_depth = 2L
+      ),
+      num_boost_round = 5L
+    )
+
+    expect_false(
+      reticulate::py_is_null_xptr(model)
+    )
+
+    xgb <- reticulate::import("xgboost")
+
+    dtest <- xgb$DMatrix(
+      data = as.matrix(data$X)
+    )
+
+    dtest$feature_names <- colnames(data$X)
+
+    predictions <- model$predict(dtest)
+
+    predictions <- as.numeric(
+      reticulate::py_to_r(predictions)
+    )
+
+    expect_length(
+      predictions,
+      nrow(data$X)
+    )
+
+    expect_true(
+      all(is.finite(predictions))
+    )
+  }
+)
+
+test_that(
+  "iterative Poisson reduces to Poisson when interaction is zero",
+  {
+
+    data <- new_gbpp_data(
+      X = data.frame(
+        x1 = c(1, 2, 3),
+        x2 = c(3, 2, 1)
+      ),
+      y = c(1, 0, 1),
+      locations = data.frame(
+        x = c(0, 1, 2),
+        y = c(0, 1, 2)
+      ),
+      quadrature_weight = c(
+        0.2,
+        0.3,
+        0.4
+      ),
+      interaction_integral = c(
+        0,
+        0,
+        0
+      )
+    )
+
+    prediction <- c(
+      -0.5,
+      0.2,
+      0.7
+    )
+
+    poisson <- gbpp_objective(
+      data,
+      prediction,
+      objective = "poisson"
+    )
+
+    iterative <- gbpp_objective(
+      data,
+      prediction,
+      objective = "iterative_poisson"
+    )
+
+    expect_equal(
+      iterative$weight,
+      rep(1, 3)
+    )
+
+    expect_equal(
+      iterative$gradient,
+      poisson$gradient
+    )
+
+    expect_equal(
+      iterative$hessian,
+      poisson$hessian
+    )
+  }
+)

@@ -178,3 +178,69 @@ def make_weighted_logistic_objective(
         return gradient, hessian
 
     return weighted_logistic_objective
+
+def make_iterative_poisson_objective(
+    quadrature_weight,
+    interaction_integral
+):
+    """
+    Create the GBPP iteratively weighted Poisson objective for XGBoost.
+
+    The spatial dependence weight is recalculated from the current
+    log-intensity prediction at each objective evaluation.
+
+    Parameters
+    ----------
+    quadrature_weight : array-like
+        Berman-Turner quadrature weights.
+
+    interaction_integral : array-like
+        Spatial interaction integral for each quadrature point.
+
+    Returns
+    -------
+    callable
+        XGBoost custom objective function.
+    """
+
+    quadrature_weight = np.asarray(
+        quadrature_weight,
+        dtype=float
+    )
+
+    interaction_integral = np.asarray(
+        interaction_integral,
+        dtype=float
+    )
+
+    def iterative_poisson_objective(preds, dtrain):
+        phi = np.clip(preds, -50.0, 50.0)
+        labels = dtrain.get_label()
+
+        lam = np.exp(phi)
+
+        denominator = (
+            1.0
+            + lam * interaction_integral
+        )
+
+        if np.any(denominator <= 0.0):
+            raise ValueError(
+                "Iterative Poisson weight is undefined because "
+                "1 + lambda * interaction_integral <= 0."
+            )
+
+        weight = 1.0 / denominator
+
+        gradient = weight * (
+            quadrature_weight * lam
+            - labels
+        )
+
+        hessian = weight * (
+            quadrature_weight * lam
+        )
+
+        return gradient, hessian
+
+    return iterative_poisson_objective

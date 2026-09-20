@@ -53,6 +53,14 @@ validate_gbpp_data <- function(data, objective = NULL) {
          call. = FALSE)
   }
 
+  if (!is.null(data$interaction_integral) &&
+      length(data$interaction_integral) != nrow(data$X)) {
+    stop(
+      "`interaction_integral` must have one value per observation.",
+      call. = FALSE
+    )
+  }
+
   if (!is.null(objective)) {
     objective <- match.arg(
       objective,
@@ -60,7 +68,8 @@ validate_gbpp_data <- function(data, objective = NULL) {
         "poisson",
         "weighted_poisson",
         "logistic",
-        "weighted_logistic"
+        "weighted_logistic",
+        "iterative_poisson"
       )
     )
 
@@ -87,6 +96,15 @@ validate_gbpp_data <- function(data, objective = NULL) {
         call. = FALSE
       )
     }
+
+    if (objective == "iterative_poisson" &&
+        is.null(data$interaction_integral)) {
+      stop(
+        "`interaction_integral` is required for the iterative Poisson objective.",
+        call. = FALSE
+      )
+    }
+
   }
 
   invisible(TRUE)

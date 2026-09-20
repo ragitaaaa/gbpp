@@ -11,6 +11,7 @@ new_gbpp_data(
   quadrature_weight = NULL,
   dummy_intensity = NULL,
   statistical_weight = NULL,
+  interaction_integral = NULL,
   window = NULL,
   type = c("planar", "network"),
   metadata = list()
@@ -28,6 +29,8 @@ new_gbpp_data(
 \item{dummy_intensity}{Dummy-process intensity for logistic objectives.}
 
 \item{statistical_weight}{Spatial/dependence weights for weighted objectives.}
+
+\item{interaction_integral}{Integral part for dynamic weighted likelihood loss.}
 
 \item{window}{Observation window or linear network.}
 

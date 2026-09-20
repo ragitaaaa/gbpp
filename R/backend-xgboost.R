@@ -234,6 +234,80 @@ make_xgboost_weighted_logistic_objective <- function(
   )
 }
 
+#' Create an XGBoost iteratively weighted Poisson objective for GBPP
+#'
+#' Creates a custom XGBoost objective in which the spatial
+#' dependence-adjusted weight is recalculated from the current
+#' log-intensity prediction.
+#'
+#' @param quadrature_weight Numeric vector of Berman-Turner
+#'   quadrature weights.
+#' @param interaction_integral Numeric vector containing the spatial
+#'   interaction integral for each quadrature point.
+#'
+#' @return A Python callable suitable for use as a custom XGBoost
+#'   objective.
+#'
+#' @keywords internal
+make_xgboost_iterative_poisson_objective <- function(
+    quadrature_weight,
+    interaction_integral
+) {
+
+  if (!is.numeric(quadrature_weight)) {
+    stop(
+      "`quadrature_weight` must be numeric.",
+      call. = FALSE
+    )
+  }
+
+  if (!is.numeric(interaction_integral)) {
+    stop(
+      "`interaction_integral` must be numeric.",
+      call. = FALSE
+    )
+  }
+
+  if (length(quadrature_weight) != length(interaction_integral)) {
+    stop(
+      "`quadrature_weight` and `interaction_integral` must have the same length.",
+      call. = FALSE
+    )
+  }
+
+  if (any(!is.finite(quadrature_weight))) {
+    stop(
+      "`quadrature_weight` must contain only finite values.",
+      call. = FALSE
+    )
+  }
+
+  if (any(!is.finite(interaction_integral))) {
+    stop(
+      "`interaction_integral` must contain only finite values.",
+      call. = FALSE
+    )
+  }
+
+  configure_gbpp_python()
+
+  python_dir <- gbpp_python_path()
+
+  backend <- reticulate::import_from_path(
+    "gbpp_xgboost",
+    path = python_dir
+  )
+
+  backend$make_iterative_poisson_objective(
+    reticulate::r_to_py(
+      as.numeric(quadrature_weight)
+    ),
+    reticulate::r_to_py(
+      as.numeric(interaction_integral)
+    )
+  )
+}
+
 #' Fit a GBPP Poisson model using XGBoost
 #'
 #' @param data A `gbpp_data` object.
@@ -523,6 +597,86 @@ fit_gbpp_xgboost_weighted_logistic <- function(
   objective <- make_xgboost_weighted_logistic_objective(
     dummy_intensity = data$dummy_intensity,
     statistical_weight = data$statistical_weight
+  )
+
+  default_params <- list(
+    booster = "gbtree",
+    eta = 0.05,
+    max_depth = 6L,
+    verbosity = 0L
+  )
+
+  final_params <- utils::modifyList(
+    default_params,
+    params
+  )
+
+  model <- xgb$train(
+    params = final_params,
+    dtrain = dtrain,
+    obj = objective,
+    num_boost_round = as.integer(num_boost_round)
+  )
+
+  model
+}
+
+#' Fit an iteratively weighted Poisson GBPP model using XGBoost
+#'
+#' Fits a spatial point-process intensity model using the iteratively
+#' weighted Poisson objective. The spatial dependence-adjusted weight
+#' is recalculated from the current model prediction during boosting.
+#'
+#' @param data A `gbpp_data` object prepared for the
+#'   `"iterative_poisson"` objective.
+#' @param params A named list of XGBoost training parameters.
+#' @param num_boost_round Number of boosting iterations.
+#'
+#' @return A Python XGBoost Booster object.
+#'
+#' @keywords internal
+fit_gbpp_xgboost_iterative_poisson <- function(
+    data,
+    params = list(),
+    num_boost_round = 100L
+) {
+
+  validate_gbpp_data(
+    data,
+    objective = "iterative_poisson"
+  )
+
+  if (!is.list(params)) {
+    stop(
+      "`params` must be a list.",
+      call. = FALSE
+    )
+  }
+
+  if (length(num_boost_round) != 1L ||
+      !is.numeric(num_boost_round) ||
+      !is.finite(num_boost_round) ||
+      num_boost_round < 1) {
+    stop(
+      "`num_boost_round` must be a positive integer.",
+      call. = FALSE
+    )
+  }
+
+  configure_gbpp_python()
+
+  xgb <- reticulate::import("xgboost")
+
+  dtrain <- xgb$DMatrix(
+    data = as.matrix(data$X),
+    label = as.numeric(data$y)
+  )
+
+  dtrain$feature_names <- colnames(data$X)
+
+  objective <- make_xgboost_iterative_poisson_objective(
+    quadrature_weight = data$quadrature_weight,
+    interaction_integral = data$interaction_integral
   )
 
   default_params <- list(
