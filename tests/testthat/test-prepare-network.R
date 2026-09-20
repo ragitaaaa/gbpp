@@ -55,6 +55,13 @@ test_that("network preparation constructs general Berman-Turner data", {
     nrow(result$X),
     length(result$locations$x)
   )
+
+  expect_true(all(is.finite(result$dummy_intensity)))
+  expect_true(all(result$dummy_intensity > 0))
+  expect_equal(
+    length(result$dummy_intensity),
+    length(result$y)
+  )
 })
 
 

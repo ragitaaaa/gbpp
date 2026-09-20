@@ -99,6 +99,10 @@ prepare_gbpp_network <- function(
   U <- spatstat.geom::union.quad(Q)
   y <- as.integer(spatstat.geom::is.data(Q))
   v <- spatstat.geom::w.quad(Q)
+  dummy_intensity <- calculate_network_dummy_intensity(
+    y = y,
+    quadrature_weight = v
+  )
 
   X <- data.frame(
     row.names = seq_len(length(y)),
@@ -136,6 +140,7 @@ prepare_gbpp_network <- function(
     y = y,
     locations = U,
     quadrature_weight = v,
+    dummy_intensity = rep(dummy_intensity, length(y)),
     window = point_pattern$domain,
     type = "network",
     metadata = list(
