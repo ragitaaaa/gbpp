@@ -2,6 +2,7 @@
 % Please edit documentation in R/data.R
 \name{new_gbpp_data}
 \alias{new_gbpp_data}
+\alias{gbpp_data}
 \title{Title}
 \usage{
 new_gbpp_data(

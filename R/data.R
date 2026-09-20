@@ -13,6 +13,7 @@
 #'
 #' @returns An object of class `gbpp_data`.
 #' @keywords internal
+#' @aliases gbpp_data
 new_gbpp_data <- function(
     X,
     y,

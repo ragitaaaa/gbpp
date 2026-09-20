@@ -19,7 +19,7 @@ is evaluated.}
 
 \item{lambda}{Optional numeric vector of estimated intensity values
 at the observed points. If omitted, \code{Kinhom()} estimates the
-intensity using its default kernel-smoothing procedure.}
+intensity using its default leave-one-out kernel procedure.}
 
 \item{correction}{Edge correction used by \code{Kinhom()}. One of
 \code{"isotropic"}, \code{"translate"}, or \code{"border"}.}
