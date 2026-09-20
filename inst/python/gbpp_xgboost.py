@@ -79,3 +79,43 @@ def make_weighted_poisson_objective(
         return gradient, hessian
 
     return weighted_poisson_objective
+
+def make_logistic_objective(dummy_intensity):
+    """
+    Create the GBPP logistic custom objective for XGBoost.
+
+    Parameters
+    ----------
+    dummy_intensity : array-like
+        Dummy-process intensity at each quadrature point.
+
+    Returns
+    -------
+    callable
+        XGBoost custom objective function.
+    """
+
+    dummy_intensity = np.asarray(
+        dummy_intensity,
+        dtype=float
+    )
+
+    log_dummy_intensity = np.log(dummy_intensity)
+
+    def logistic_objective(preds, dtrain):
+        phi = np.clip(preds, -50.0, 50.0)
+        labels = dtrain.get_label()
+
+        pi = 1.0 / (
+            1.0
+            + np.exp(
+                -(phi - log_dummy_intensity)
+            )
+        )
+
+        gradient = pi - labels
+        hessian = pi * (1.0 - pi)
+
+        return gradient, hessian
+
+    return logistic_objective
