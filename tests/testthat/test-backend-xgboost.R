@@ -927,3 +927,87 @@ test_that(
     )
   }
 )
+
+test_that("XGBoost model has GBPP class and supports predict()", {
+
+  skip_if_not(
+    reticulate::py_available(),
+    message = "Python is not available."
+  )
+
+  configure_gbpp_python()
+
+  data <- new_gbpp_data(
+    X = data.frame(
+      x1 = c(0, 1, 2, 3, 4, 5),
+      x2 = c(1, 1, 2, 2, 3, 3)
+    ),
+    y = c(1, 0, 1, 0, 1, 0),
+    locations = data.frame(
+      x = c(0, 1, 2, 3, 4, 5),
+      y = c(0, 1, 0, 1, 0, 1)
+    ),
+    quadrature_weight = rep(0.5, 6)
+  )
+
+  model <- fit_gbpp_xgboost(
+    data = data,
+    params = list(
+      eta = 0.1,
+      max_depth = 2L
+    ),
+    nrounds = 5L
+  )
+
+  expect_s3_class(
+    model,
+    "gbpp_xgboost"
+  )
+
+  expect_true(
+    reticulate::py_has_attr(model, "predict")
+  )
+
+  predictions_df <- predict(
+    model,
+    data$X
+  )
+
+  expect_type(
+    predictions_df,
+    "double"
+  )
+
+  expect_length(
+    predictions_df,
+    nrow(data$X)
+  )
+
+  expect_true(
+    all(is.finite(predictions_df))
+  )
+
+  predictions_matrix <- predict(
+    model,
+    as.matrix(data$X)
+  )
+
+  expect_type(
+    predictions_matrix,
+    "double"
+  )
+
+  expect_length(
+    predictions_matrix,
+    nrow(data$X)
+  )
+
+  expect_true(
+    all(is.finite(predictions_matrix))
+  )
+
+  expect_equal(
+    predictions_df,
+    predictions_matrix
+  )
+})

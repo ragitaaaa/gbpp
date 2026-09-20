@@ -1,19 +1,123 @@
-#' Create an XGBoost custom objective for the GBPP Poisson loss
+# XGBoost backend for gbpp
+#
+# This file contains:
+# - XGBoost objective factories
+# - XGBoost fitting functions
+# - XGBoost prediction method
+
+# ============================================================
+# Internal helper: import GBPP XGBoost Python module
+# ============================================================
+
+.gbpp_xgboost_module <- function() {
+  configure_gbpp_python()
+
+  python_path <- gbpp_python_path()
+
+  reticulate::import_from_path(
+    module = "gbpp_xgboost",
+    path = python_path
+  )
+}
+
+
+# ============================================================
+# Internal helper: mark fitted model
+# ============================================================
+
+mark_gbpp_xgboost <- function(model) {
+  class(model) <- c("gbpp_xgboost", class(model))
+  model
+}
+
+
+# ============================================================
+# Prediction method
+# ============================================================
+
+#' Predict from a fitted GBPP XGBoost model
 #'
-#' Creates a Python callable implementing the GBPP Poisson
-#' gradient and Hessian.
+#' @param object A fitted `gbpp_xgboost` model.
+#' @param newdata A numeric matrix or data frame containing predictor
+#'   variables.
+#' @param ... Additional arguments passed to the XGBoost prediction
+#'   method.
+#'
+#' @return A numeric vector of predictions.
+#'
+#' @export
+predict.gbpp_xgboost <- function(object, newdata, ...) {
+
+  if (missing(newdata)) {
+    stop("`newdata` must be supplied.", call. = FALSE)
+  }
+
+  if (!is.matrix(newdata) && !is.data.frame(newdata)) {
+    stop(
+      "`newdata` must be a numeric matrix or data frame.",
+      call. = FALSE
+    )
+  }
+
+  if (is.data.frame(newdata)) {
+    if (!all(vapply(newdata, is.numeric, logical(1)))) {
+      stop(
+        "`newdata` must contain only numeric columns.",
+        call. = FALSE
+      )
+    }
+
+    newdata <- as.matrix(newdata)
+  }
+
+  if (!is.numeric(newdata)) {
+    stop(
+      "`newdata` must be numeric.",
+      call. = FALSE
+    )
+  }
+
+  if (any(!is.finite(newdata))) {
+    stop(
+      "`newdata` must contain only finite values.",
+      call. = FALSE
+    )
+  }
+
+  xgb <- reticulate::import("xgboost")
+
+  dtest <- xgb$DMatrix(
+    data = newdata
+  )
+
+  if (!is.null(colnames(newdata))) {
+    dtest$feature_names <- colnames(newdata)
+  }
+
+  predictions <- object$predict(
+    dtest,
+    ...
+  )
+
+  reticulate::py_to_r(predictions)
+}
+
+
+# ============================================================
+# Objective factories
+# ============================================================
+
+#' Create XGBoost Poisson objective
 #'
 #' @param quadrature_weight Numeric vector of quadrature weights.
 #'
-#' @return A Python callable suitable for `xgboost::train()`.
+#' @return A Python callable implementing the GBPP Poisson objective.
+#'
 #' @keywords internal
 make_xgboost_poisson_objective <- function(quadrature_weight) {
 
   if (!is.numeric(quadrature_weight)) {
-    stop(
-      "`quadrature_weight` must be numeric.",
-      call. = FALSE
-    )
+    stop("`quadrature_weight` must be numeric.", call. = FALSE)
   }
 
   if (any(!is.finite(quadrature_weight))) {
@@ -23,55 +127,44 @@ make_xgboost_poisson_objective <- function(quadrature_weight) {
     )
   }
 
-  configure_gbpp_python()
-
-  python_dir <- gbpp_python_path()
-
-  backend <- reticulate::import_from_path(
-    "gbpp_xgboost",
-    path = python_dir
-  )
-
-  backend$make_poisson_objective(
-    reticulate::r_to_py(
-      as.numeric(quadrature_weight)
+  if (any(quadrature_weight <= 0)) {
+    stop(
+      "`quadrature_weight` must contain only positive values.",
+      call. = FALSE
     )
+  }
+
+  module <- .gbpp_xgboost_module()
+
+  module$make_poisson_objective(
+    quadrature_weight = quadrature_weight
   )
 }
 
-#' Create an XGBoost custom objective for the GBPP weighted Poisson loss
-#'
-#' Creates a Python callable implementing the GBPP weighted Poisson
-#' gradient and Hessian.
+
+#' Create XGBoost weighted Poisson objective
 #'
 #' @param quadrature_weight Numeric vector of quadrature weights.
 #' @param statistical_weight Numeric vector of statistical weights.
 #'
-#' @return A Python callable suitable for `xgboost::train()`.
+#' @return A Python callable implementing the weighted GBPP Poisson objective.
+#'
 #' @keywords internal
 make_xgboost_weighted_poisson_objective <- function(
     quadrature_weight,
-    statistical_weight
-) {
+    statistical_weight) {
 
   if (!is.numeric(quadrature_weight)) {
-    stop(
-      "`quadrature_weight` must be numeric.",
-      call. = FALSE
-    )
+    stop("`quadrature_weight` must be numeric.", call. = FALSE)
   }
 
   if (!is.numeric(statistical_weight)) {
-    stop(
-      "`statistical_weight` must be numeric.",
-      call. = FALSE
-    )
+    stop("`statistical_weight` must be numeric.", call. = FALSE)
   }
 
   if (length(quadrature_weight) != length(statistical_weight)) {
     stop(
-      "`quadrature_weight` and `statistical_weight` must have ",
-      "the same length.",
+      "`quadrature_weight` and `statistical_weight` must have the same length.",
       call. = FALSE
     )
   }
@@ -90,43 +183,40 @@ make_xgboost_weighted_poisson_objective <- function(
     )
   }
 
-  configure_gbpp_python()
-
-  python_dir <- gbpp_python_path()
-
-  backend <- reticulate::import_from_path(
-    "gbpp_xgboost",
-    path = python_dir
-  )
-
-  backend$make_weighted_poisson_objective(
-    reticulate::r_to_py(
-      as.numeric(quadrature_weight)
-    ),
-    reticulate::r_to_py(
-      as.numeric(statistical_weight)
+  if (any(quadrature_weight <= 0)) {
+    stop(
+      "`quadrature_weight` must contain only positive values.",
+      call. = FALSE
     )
+  }
+
+  if (any(statistical_weight <= 0)) {
+    stop(
+      "`statistical_weight` must contain only positive values.",
+      call. = FALSE
+    )
+  }
+
+  module <- .gbpp_xgboost_module()
+
+  module$make_weighted_poisson_objective(
+    quadrature_weight = quadrature_weight,
+    statistical_weight = statistical_weight
   )
 }
 
-#' Create an XGBoost custom objective for the GBPP logistic loss
+
+#' Create XGBoost Logistic objective
 #'
-#' Creates a Python callable implementing the GBPP logistic
-#' gradient and Hessian.
+#' @param dummy_intensity Numeric vector of dummy intensities.
 #'
-#' @param dummy_intensity Numeric vector of dummy-process intensities.
+#' @return A Python callable implementing the GBPP Logistic objective.
 #'
-#' @return A Python callable suitable for `xgboost::train()`.
 #' @keywords internal
-make_xgboost_logistic_objective <- function(
-    dummy_intensity
-) {
+make_xgboost_logistic_objective <- function(dummy_intensity) {
 
   if (!is.numeric(dummy_intensity)) {
-    stop(
-      "`dummy_intensity` must be numeric.",
-      call. = FALSE
-    )
+    stop("`dummy_intensity` must be numeric.", call. = FALSE)
   }
 
   if (any(!is.finite(dummy_intensity))) {
@@ -143,54 +233,32 @@ make_xgboost_logistic_objective <- function(
     )
   }
 
-  configure_gbpp_python()
+  module <- .gbpp_xgboost_module()
 
-  python_dir <- gbpp_python_path()
-
-  backend <- reticulate::import_from_path(
-    "gbpp_xgboost",
-    path = python_dir
-  )
-
-  backend$make_logistic_objective(
-    reticulate::r_to_py(
-      as.numeric(dummy_intensity)
-    )
+  module$make_logistic_objective(
+    dummy_intensity = dummy_intensity
   )
 }
 
-#' Create an XGBoost weighted logistic objective for GBPP
+
+#' Create XGBoost weighted Logistic objective
 #'
-#' Creates a custom XGBoost objective function for the weighted logistic
-#' point-process model. The objective uses a fixed statistical/spatial
-#' weight for each quadrature point.
+#' @param dummy_intensity Numeric vector of dummy intensities.
+#' @param statistical_weight Numeric vector of statistical weights.
 #'
-#' @param dummy_intensity Numeric vector containing the dummy-process
-#'   intensity at each quadrature point.
-#' @param statistical_weight Numeric vector containing the fixed
-#'   statistical/spatial weight at each quadrature point.
-#'
-#' @return A Python callable suitable for use as a custom XGBoost
-#'   objective.
+#' @return A Python callable implementing the weighted GBPP Logistic objective.
 #'
 #' @keywords internal
 make_xgboost_weighted_logistic_objective <- function(
     dummy_intensity,
-    statistical_weight
-) {
+    statistical_weight) {
 
   if (!is.numeric(dummy_intensity)) {
-    stop(
-      "`dummy_intensity` must be numeric.",
-      call. = FALSE
-    )
+    stop("`dummy_intensity` must be numeric.", call. = FALSE)
   }
 
   if (!is.numeric(statistical_weight)) {
-    stop(
-      "`statistical_weight` must be numeric.",
-      call. = FALSE
-    )
+    stop("`statistical_weight` must be numeric.", call. = FALSE)
   }
 
   if (length(dummy_intensity) != length(statistical_weight)) {
@@ -200,10 +268,9 @@ make_xgboost_weighted_logistic_objective <- function(
     )
   }
 
-  if (any(!is.finite(dummy_intensity)) ||
-      any(dummy_intensity <= 0)) {
+  if (any(!is.finite(dummy_intensity))) {
     stop(
-      "`dummy_intensity` must contain positive finite values.",
+      "`dummy_intensity` must contain only finite values.",
       call. = FALSE
     )
   }
@@ -215,57 +282,47 @@ make_xgboost_weighted_logistic_objective <- function(
     )
   }
 
-  configure_gbpp_python()
-
-  python_dir <- gbpp_python_path()
-
-  backend <- reticulate::import_from_path(
-    "gbpp_xgboost",
-    path = python_dir
-  )
-
-  backend$make_weighted_logistic_objective(
-    reticulate::r_to_py(
-      as.numeric(dummy_intensity)
-    ),
-    reticulate::r_to_py(
-      as.numeric(statistical_weight)
-    )
-  )
-}
-
-#' Create an XGBoost iteratively weighted Poisson objective for GBPP
-#'
-#' Creates a custom XGBoost objective in which the spatial
-#' dependence-adjusted weight is recalculated from the current
-#' log-intensity prediction.
-#'
-#' @param quadrature_weight Numeric vector of Berman-Turner
-#'   quadrature weights.
-#' @param interaction_integral Numeric vector containing the spatial
-#'   interaction integral for each quadrature point.
-#'
-#' @return A Python callable suitable for use as a custom XGBoost
-#'   objective.
-#'
-#' @keywords internal
-make_xgboost_iterative_poisson_objective <- function(
-    quadrature_weight,
-    interaction_integral
-) {
-
-  if (!is.numeric(quadrature_weight)) {
+  if (any(dummy_intensity <= 0)) {
     stop(
-      "`quadrature_weight` must be numeric.",
+      "`dummy_intensity` must contain only positive values.",
       call. = FALSE
     )
   }
 
-  if (!is.numeric(interaction_integral)) {
+  if (any(statistical_weight <= 0)) {
     stop(
-      "`interaction_integral` must be numeric.",
+      "`statistical_weight` must contain only positive values.",
       call. = FALSE
     )
+  }
+
+  module <- .gbpp_xgboost_module()
+
+  module$make_weighted_logistic_objective(
+    dummy_intensity = dummy_intensity,
+    statistical_weight = statistical_weight
+  )
+}
+
+
+#' Create XGBoost iterative Poisson objective
+#'
+#' @param quadrature_weight Numeric vector of quadrature weights.
+#' @param interaction_integral Numeric vector of interaction integrals.
+#'
+#' @return A Python callable implementing the iterative GBPP Poisson objective.
+#'
+#' @keywords internal
+make_xgboost_iterative_poisson_objective <- function(
+    quadrature_weight,
+    interaction_integral) {
+
+  if (!is.numeric(quadrature_weight)) {
+    stop("`quadrature_weight` must be numeric.", call. = FALSE)
+  }
+
+  if (!is.numeric(interaction_integral)) {
+    stop("`interaction_integral` must be numeric.", call. = FALSE)
   }
 
   if (length(quadrature_weight) != length(interaction_integral)) {
@@ -289,57 +346,40 @@ make_xgboost_iterative_poisson_objective <- function(
     )
   }
 
-  configure_gbpp_python()
-
-  python_dir <- gbpp_python_path()
-
-  backend <- reticulate::import_from_path(
-    "gbpp_xgboost",
-    path = python_dir
-  )
-
-  backend$make_iterative_poisson_objective(
-    reticulate::r_to_py(
-      as.numeric(quadrature_weight)
-    ),
-    reticulate::r_to_py(
-      as.numeric(interaction_integral)
-    )
-  )
-}
-
-#' Create an XGBoost iteratively weighted Logistic objective for GBPP
-#'
-#' Creates a custom XGBoost objective in which the spatial
-#' dependence-adjusted weight is recalculated from the current
-#' log-intensity prediction.
-#'
-#' @param dummy_intensity Numeric vector containing the dummy-process
-#'   intensity at each quadrature point.
-#' @param interaction_integral Numeric vector containing the spatial
-#'   interaction integral for each quadrature point.
-#'
-#' @return A Python callable suitable for use as a custom XGBoost
-#'   objective.
-#'
-#' @keywords internal
-make_xgboost_iterative_logistic_objective <- function(
-    dummy_intensity,
-    interaction_integral
-) {
-
-  if (!is.numeric(dummy_intensity)) {
+  if (any(quadrature_weight <= 0)) {
     stop(
-      "`dummy_intensity` must be numeric.",
+      "`quadrature_weight` must contain only positive values.",
       call. = FALSE
     )
   }
 
+  module <- .gbpp_xgboost_module()
+
+  module$make_iterative_poisson_objective(
+    quadrature_weight = quadrature_weight,
+    interaction_integral = interaction_integral
+  )
+}
+
+
+#' Create XGBoost iterative Logistic objective
+#'
+#' @param dummy_intensity Numeric vector of dummy intensities.
+#' @param interaction_integral Numeric vector of interaction integrals.
+#'
+#' @return A Python callable implementing the iterative GBPP Logistic objective.
+#'
+#' @keywords internal
+make_xgboost_iterative_logistic_objective <- function(
+    dummy_intensity,
+    interaction_integral) {
+
+  if (!is.numeric(dummy_intensity)) {
+    stop("`dummy_intensity` must be numeric.", call. = FALSE)
+  }
+
   if (!is.numeric(interaction_integral)) {
-    stop(
-      "`interaction_integral` must be numeric.",
-      call. = FALSE
-    )
+    stop("`interaction_integral` must be numeric.", call. = FALSE)
   }
 
   if (length(dummy_intensity) != length(interaction_integral)) {
@@ -349,10 +389,9 @@ make_xgboost_iterative_logistic_objective <- function(
     )
   }
 
-  if (any(!is.finite(dummy_intensity)) ||
-      any(dummy_intensity <= 0)) {
+  if (any(!is.finite(dummy_intensity))) {
     stop(
-      "`dummy_intensity` must contain positive finite values.",
+      "`dummy_intensity` must contain only finite values.",
       call. = FALSE
     )
   }
@@ -364,76 +403,57 @@ make_xgboost_iterative_logistic_objective <- function(
     )
   }
 
-  configure_gbpp_python()
-
-  python_dir <- gbpp_python_path()
-
-  backend <- reticulate::import_from_path(
-    "gbpp_xgboost",
-    path = python_dir
-  )
-
-  backend$make_iterative_logistic_objective(
-    reticulate::r_to_py(
-      as.numeric(dummy_intensity)
-    ),
-    reticulate::r_to_py(
-      as.numeric(interaction_integral)
-    )
-  )
-}
-
-#' Fit a GBPP Poisson model using XGBoost
-#'
-#' @param data A `gbpp_data` object.
-#' @param params Named list of XGBoost parameters.
-#' @param nrounds Number of boosting rounds.
-#'
-#' @return A fitted XGBoost Booster.
-#' @keywords internal
-fit_gbpp_xgboost <- function(
-    data,
-    params = list(),
-    nrounds = 100
-) {
-
-  validate_gbpp_data(
-    data,
-    objective = "poisson"
-  )
-
-  if (length(params) > 0L && is.null(names(params))) {
+  if (any(dummy_intensity <= 0)) {
     stop(
-      "`params` must be a named list.",
+      "`dummy_intensity` must contain only positive values.",
       call. = FALSE
     )
   }
 
-  if (length(nrounds) != 1L ||
-      !is.numeric(nrounds) ||
-      !is.finite(nrounds) ||
-      nrounds < 1) {
-    stop(
-      "`nrounds` must be a positive integer.",
-      call. = FALSE
-    )
+  module <- .gbpp_xgboost_module()
+
+  module$make_iterative_logistic_objective(
+    dummy_intensity = dummy_intensity,
+    interaction_integral = interaction_integral
+  )
+}
+
+
+# ============================================================
+# Fit: Poisson
+# ============================================================
+
+#' Fit a GBPP XGBoost Poisson model
+#'
+#' @param data A `gbpp_data` object.
+#' @param params A list of XGBoost parameters.
+#' @param nrounds Number of boosting rounds.
+#'
+#' @return A fitted XGBoost Booster.
+#'
+#' @export
+fit_gbpp_xgboost <- function(
+    data,
+    params = list(),
+    nrounds = 100) {
+
+  validate_gbpp_data(data)
+
+  if (!is.numeric(nrounds) || length(nrounds) != 1L ||
+      !is.finite(nrounds) || nrounds < 1) {
+    stop("`nrounds` must be a positive scalar.", call. = FALSE)
   }
 
   configure_gbpp_python()
 
   xgb <- reticulate::import("xgboost")
 
-  X <- as.matrix(data$X)
-  y <- as.numeric(data$y)
-
   dtrain <- xgb$DMatrix(
-    data = X,
-    label = y
+    data = as.matrix(data$X),
+    label = data$y
   )
 
-  if (!is.null(colnames(data$X))) {
-    dtrain$feature_names <- colnames(data$X)
-  }
+  dtrain$feature_names <- colnames(data$X)
 
   objective <- make_xgboost_poisson_objective(
     data$quadrature_weight
@@ -446,232 +466,221 @@ fit_gbpp_xgboost <- function(
     verbosity = 0L
   )
 
-  final_params <- utils::modifyList(
+  train_params <- utils::modifyList(
     default_params,
     params
   )
 
   model <- xgb$train(
-    params = final_params,
+    params = train_params,
     dtrain = dtrain,
-    obj = objective,
-    num_boost_round = as.integer(nrounds)
+    num_boost_round = as.integer(nrounds),
+    obj = objective
   )
 
-  model
+  mark_gbpp_xgboost(model)
 }
 
-#' Fit a GBPP weighted Poisson model using XGBoost
+
+# ============================================================
+# Fit: Weighted Poisson
+# ============================================================
+
+#' Fit a GBPP XGBoost weighted Poisson model
 #'
 #' @param data A `gbpp_data` object.
-#' @param params Named list of XGBoost parameters.
+#' @param params A list of XGBoost parameters.
 #' @param nrounds Number of boosting rounds.
 #'
 #' @return A fitted XGBoost Booster.
-#' @keywords internal
+#'
+#' @export
 fit_gbpp_xgboost_weighted_poisson <- function(
     data,
     params = list(),
-    nrounds = 100
-) {
+    nrounds = 100) {
 
-  validate_gbpp_data(
-    data,
-    objective = "weighted_poisson"
-  )
+  validate_gbpp_data(data)
 
-  if (length(params) > 0L && is.null(names(params))) {
+  if (is.null(data$statistical_weight)) {
     stop(
-      "`params` must be a named list.",
+      "`statistical_weight` is required for weighted Poisson.",
       call. = FALSE
     )
   }
 
-  if (length(nrounds) != 1L ||
-      !is.numeric(nrounds) ||
-      !is.finite(nrounds) ||
-      nrounds < 1) {
-    stop(
-      "`nrounds` must be a positive integer.",
-      call. = FALSE
-    )
+  if (!is.numeric(nrounds) || length(nrounds) != 1L ||
+      !is.finite(nrounds) || nrounds < 1) {
+    stop("`nrounds` must be a positive scalar.", call. = FALSE)
   }
 
   configure_gbpp_python()
-
-  xgb <- reticulate::import("xgboost")
-
-  X <- as.matrix(data$X)
-  y <- as.numeric(data$y)
-
-  dtrain <- xgb$DMatrix(
-    data = X,
-    label = y
-  )
-
-  if (!is.null(colnames(data$X))) {
-    dtrain$feature_names <- colnames(data$X)
-  }
-
-  objective <- make_xgboost_weighted_poisson_objective(
-    quadrature_weight = data$quadrature_weight,
-    statistical_weight = data$statistical_weight
-  )
-
-  default_params <- list(
-    booster = "gbtree",
-    eta = 0.05,
-    max_depth = 6L,
-    verbosity = 0L
-  )
-
-  final_params <- utils::modifyList(
-    default_params,
-    params
-  )
-
-  model <- xgb$train(
-    params = final_params,
-    dtrain = dtrain,
-    obj = objective,
-    num_boost_round = as.integer(nrounds)
-  )
-
-  model
-}
-
-#' Fit a GBPP logistic model using XGBoost
-#'
-#' @param data A `gbpp_data` object.
-#' @param params Named list of XGBoost parameters.
-#' @param nrounds Number of boosting rounds.
-#'
-#' @return A fitted XGBoost Booster.
-#' @keywords internal
-fit_gbpp_xgboost_logistic <- function(
-    data,
-    params = list(),
-    nrounds = 100
-) {
-
-  validate_gbpp_data(
-    data,
-    objective = "logistic"
-  )
-
-  if (length(params) > 0L && is.null(names(params))) {
-    stop(
-      "`params` must be a named list.",
-      call. = FALSE
-    )
-  }
-
-  if (length(nrounds) != 1L ||
-      !is.numeric(nrounds) ||
-      !is.finite(nrounds) ||
-      nrounds < 1) {
-    stop(
-      "`nrounds` must be a positive integer.",
-      call. = FALSE
-    )
-  }
-
-  configure_gbpp_python()
-
-  xgb <- reticulate::import("xgboost")
-
-  X <- as.matrix(data$X)
-  y <- as.numeric(data$y)
-
-  dtrain <- xgb$DMatrix(
-    data = X,
-    label = y
-  )
-
-  if (!is.null(colnames(data$X))) {
-    dtrain$feature_names <- colnames(data$X)
-  }
-
-  objective <- make_xgboost_logistic_objective(
-    dummy_intensity = data$dummy_intensity
-  )
-
-  default_params <- list(
-    booster = "gbtree",
-    eta = 0.05,
-    max_depth = 6L,
-    verbosity = 0L
-  )
-
-  final_params <- utils::modifyList(
-    default_params,
-    params
-  )
-
-  model <- xgb$train(
-    params = final_params,
-    dtrain = dtrain,
-    obj = objective,
-    num_boost_round = as.integer(nrounds)
-  )
-
-  model
-}
-
-#' Fit a GBPP weighted logistic model using XGBoost
-#'
-#' Fits a gradient boosting model for a spatial point process using
-#' the weighted logistic objective implemented as a custom XGBoost
-#' objective function.
-#'
-#' @param data A `gbpp_data` object prepared for the
-#'   `"weighted_logistic"` objective.
-#' @param params A named list of XGBoost training parameters.
-#' @param num_boost_round Number of boosting iterations.
-#'
-#' @return A Python XGBoost Booster object.
-#'
-#' @keywords internal
-fit_gbpp_xgboost_weighted_logistic <- function(
-    data,
-    params = list(),
-    num_boost_round = 100L
-) {
-
-  validate_gbpp_data(
-    data,
-    objective = "weighted_logistic"
-  )
-
-  if (!is.list(params)) {
-    stop(
-      "`params` must be a list.",
-      call. = FALSE
-    )
-  }
-
-  if (length(num_boost_round) != 1L ||
-      !is.numeric(num_boost_round) ||
-      !is.finite(num_boost_round) ||
-      num_boost_round < 1) {
-    stop(
-      "`num_boost_round` must be a positive integer.",
-      call. = FALSE
-    )
-  }
 
   xgb <- reticulate::import("xgboost")
 
   dtrain <- xgb$DMatrix(
     data = as.matrix(data$X),
-    label = as.numeric(data$y)
+    label = data$y
+  )
+
+  dtrain$feature_names <- colnames(data$X)
+
+  objective <- make_xgboost_weighted_poisson_objective(
+    data$quadrature_weight,
+    data$statistical_weight
+  )
+
+  default_params <- list(
+    booster = "gbtree",
+    eta = 0.05,
+    max_depth = 6L,
+    verbosity = 0L
+  )
+
+  train_params <- utils::modifyList(
+    default_params,
+    params
+  )
+
+  model <- xgb$train(
+    params = train_params,
+    dtrain = dtrain,
+    num_boost_round = as.integer(nrounds),
+    obj = objective
+  )
+
+  mark_gbpp_xgboost(model)
+}
+
+
+# ============================================================
+# Fit: Logistic
+# ============================================================
+
+#' Fit a GBPP XGBoost Logistic model
+#'
+#' @param data A `gbpp_data` object.
+#' @param params A list of XGBoost parameters.
+#' @param nrounds Number of boosting rounds.
+#'
+#' @return A fitted XGBoost Booster.
+#'
+#' @export
+fit_gbpp_xgboost_logistic <- function(
+    data,
+    params = list(),
+    nrounds = 100) {
+
+  validate_gbpp_data(data)
+
+  if (is.null(data$dummy_intensity)) {
+    stop(
+      "`dummy_intensity` is required for Logistic.",
+      call. = FALSE
+    )
+  }
+
+  if (!is.numeric(nrounds) || length(nrounds) != 1L ||
+      !is.finite(nrounds) || nrounds < 1) {
+    stop("`nrounds` must be a positive scalar.", call. = FALSE)
+  }
+
+  configure_gbpp_python()
+
+  xgb <- reticulate::import("xgboost")
+
+  dtrain <- xgb$DMatrix(
+    data = as.matrix(data$X),
+    label = data$y
+  )
+
+  dtrain$feature_names <- colnames(data$X)
+
+  objective <- make_xgboost_logistic_objective(
+    data$dummy_intensity
+  )
+
+  default_params <- list(
+    booster = "gbtree",
+    eta = 0.05,
+    max_depth = 6L,
+    verbosity = 0L
+  )
+
+  train_params <- utils::modifyList(
+    default_params,
+    params
+  )
+
+  model <- xgb$train(
+    params = train_params,
+    dtrain = dtrain,
+    num_boost_round = as.integer(nrounds),
+    obj = objective
+  )
+
+  mark_gbpp_xgboost(model)
+}
+
+
+# ============================================================
+# Fit: Weighted Logistic
+# ============================================================
+
+#' Fit a GBPP XGBoost weighted Logistic model
+#'
+#' @param data A `gbpp_data` object.
+#' @param params A list of XGBoost parameters.
+#' @param num_boost_round Number of boosting rounds.
+#'
+#' @return A fitted XGBoost Booster.
+#'
+#' @export
+fit_gbpp_xgboost_weighted_logistic <- function(
+    data,
+    params = list(),
+    num_boost_round = 100L) {
+
+  validate_gbpp_data(data)
+
+  if (is.null(data$dummy_intensity)) {
+    stop(
+      "`dummy_intensity` is required for weighted Logistic.",
+      call. = FALSE
+    )
+  }
+
+  if (is.null(data$statistical_weight)) {
+    stop(
+      "`statistical_weight` is required for weighted Logistic.",
+      call. = FALSE
+    )
+  }
+
+  if (!is.numeric(num_boost_round) ||
+      length(num_boost_round) != 1L ||
+      !is.finite(num_boost_round) ||
+      num_boost_round < 1) {
+    stop(
+      "`num_boost_round` must be a positive scalar.",
+      call. = FALSE
+    )
+  }
+
+  configure_gbpp_python()
+
+  xgb <- reticulate::import("xgboost")
+
+  dtrain <- xgb$DMatrix(
+    data = as.matrix(data$X),
+    label = data$y
   )
 
   dtrain$feature_names <- colnames(data$X)
 
   objective <- make_xgboost_weighted_logistic_objective(
-    dummy_intensity = data$dummy_intensity,
-    statistical_weight = data$statistical_weight
+    data$dummy_intensity,
+    data$statistical_weight
   )
 
   default_params <- list(
@@ -681,59 +690,55 @@ fit_gbpp_xgboost_weighted_logistic <- function(
     verbosity = 0L
   )
 
-  final_params <- utils::modifyList(
+  train_params <- utils::modifyList(
     default_params,
     params
   )
 
   model <- xgb$train(
-    params = final_params,
+    params = train_params,
     dtrain = dtrain,
-    obj = objective,
-    num_boost_round = as.integer(num_boost_round)
+    num_boost_round = as.integer(num_boost_round),
+    obj = objective
   )
 
-  model
+  mark_gbpp_xgboost(model)
 }
 
-#' Fit an iteratively weighted Poisson GBPP model using XGBoost
+
+# ============================================================
+# Fit: Iterative Poisson
+# ============================================================
+
+#' Fit a GBPP XGBoost iterative Poisson model
 #'
-#' Fits a spatial point-process intensity model using the iteratively
-#' weighted Poisson objective. The spatial dependence-adjusted weight
-#' is recalculated from the current model prediction during boosting.
+#' @param data A `gbpp_data` object.
+#' @param params A list of XGBoost parameters.
+#' @param num_boost_round Number of boosting rounds.
 #'
-#' @param data A `gbpp_data` object prepared for the
-#'   `"iterative_poisson"` objective.
-#' @param params A named list of XGBoost training parameters.
-#' @param num_boost_round Number of boosting iterations.
+#' @return A fitted XGBoost Booster.
 #'
-#' @return A Python XGBoost Booster object.
-#'
-#' @keywords internal
+#' @export
 fit_gbpp_xgboost_iterative_poisson <- function(
     data,
     params = list(),
-    num_boost_round = 100L
-) {
+    num_boost_round = 100L) {
 
-  validate_gbpp_data(
-    data,
-    objective = "iterative_poisson"
-  )
+  validate_gbpp_data(data)
 
-  if (!is.list(params)) {
+  if (is.null(data$interaction_integral)) {
     stop(
-      "`params` must be a list.",
+      "`interaction_integral` is required for iterative Poisson.",
       call. = FALSE
     )
   }
 
-  if (length(num_boost_round) != 1L ||
-      !is.numeric(num_boost_round) ||
+  if (!is.numeric(num_boost_round) ||
+      length(num_boost_round) != 1L ||
       !is.finite(num_boost_round) ||
       num_boost_round < 1) {
     stop(
-      "`num_boost_round` must be a positive integer.",
+      "`num_boost_round` must be a positive scalar.",
       call. = FALSE
     )
   }
@@ -744,14 +749,14 @@ fit_gbpp_xgboost_iterative_poisson <- function(
 
   dtrain <- xgb$DMatrix(
     data = as.matrix(data$X),
-    label = as.numeric(data$y)
+    label = data$y
   )
 
   dtrain$feature_names <- colnames(data$X)
 
   objective <- make_xgboost_iterative_poisson_objective(
-    quadrature_weight = data$quadrature_weight,
-    interaction_integral = data$interaction_integral
+    data$quadrature_weight,
+    data$interaction_integral
   )
 
   default_params <- list(
@@ -761,59 +766,62 @@ fit_gbpp_xgboost_iterative_poisson <- function(
     verbosity = 0L
   )
 
-  final_params <- utils::modifyList(
+  train_params <- utils::modifyList(
     default_params,
     params
   )
 
   model <- xgb$train(
-    params = final_params,
+    params = train_params,
     dtrain = dtrain,
-    obj = objective,
-    num_boost_round = as.integer(num_boost_round)
+    num_boost_round = as.integer(num_boost_round),
+    obj = objective
   )
 
-  model
+  mark_gbpp_xgboost(model)
 }
 
-#' Fit an iteratively weighted Logistic GBPP model using XGBoost
+
+# ============================================================
+# Fit: Iterative Logistic
+# ============================================================
+
+#' Fit a GBPP XGBoost iterative Logistic model
 #'
-#' Fits a spatial point-process intensity model using the iteratively
-#' weighted Logistic objective. The spatial dependence-adjusted weight
-#' is recalculated from the current model prediction during boosting.
+#' @param data A `gbpp_data` object.
+#' @param params A list of XGBoost parameters.
+#' @param num_boost_round Number of boosting rounds.
 #'
-#' @param data A `gbpp_data` object prepared for the
-#'   `"iterative_logistic"` objective.
-#' @param params A named list of XGBoost training parameters.
-#' @param num_boost_round Number of boosting iterations.
+#' @return A fitted XGBoost Booster.
 #'
-#' @return A Python XGBoost Booster object.
-#'
-#' @keywords internal
+#' @export
 fit_gbpp_xgboost_iterative_logistic <- function(
     data,
     params = list(),
-    num_boost_round = 100L
-) {
+    num_boost_round = 100L) {
 
-  validate_gbpp_data(
-    data,
-    objective = "iterative_logistic"
-  )
+  validate_gbpp_data(data)
 
-  if (!is.list(params)) {
+  if (is.null(data$dummy_intensity)) {
     stop(
-      "`params` must be a list.",
+      "`dummy_intensity` is required for iterative Logistic.",
       call. = FALSE
     )
   }
 
-  if (length(num_boost_round) != 1L ||
-      !is.numeric(num_boost_round) ||
+  if (is.null(data$interaction_integral)) {
+    stop(
+      "`interaction_integral` is required for iterative Logistic.",
+      call. = FALSE
+    )
+  }
+
+  if (!is.numeric(num_boost_round) ||
+      length(num_boost_round) != 1L ||
       !is.finite(num_boost_round) ||
       num_boost_round < 1) {
     stop(
-      "`num_boost_round` must be a positive integer.",
+      "`num_boost_round` must be a positive scalar.",
       call. = FALSE
     )
   }
@@ -824,14 +832,14 @@ fit_gbpp_xgboost_iterative_logistic <- function(
 
   dtrain <- xgb$DMatrix(
     data = as.matrix(data$X),
-    label = as.numeric(data$y)
+    label = data$y
   )
 
   dtrain$feature_names <- colnames(data$X)
 
   objective <- make_xgboost_iterative_logistic_objective(
-    dummy_intensity = data$dummy_intensity,
-    interaction_integral = data$interaction_integral
+    data$dummy_intensity,
+    data$interaction_integral
   )
 
   default_params <- list(
@@ -841,17 +849,17 @@ fit_gbpp_xgboost_iterative_logistic <- function(
     verbosity = 0L
   )
 
-  final_params <- utils::modifyList(
+  train_params <- utils::modifyList(
     default_params,
     params
   )
 
   model <- xgb$train(
-    params = final_params,
+    params = train_params,
     dtrain = dtrain,
-    obj = objective,
-    num_boost_round = as.integer(num_boost_round)
+    num_boost_round = as.integer(num_boost_round),
+    obj = objective
   )
 
-  model
+  mark_gbpp_xgboost(model)
 }
