@@ -69,11 +69,12 @@ validate_gbpp_data <- function(data, objective = NULL) {
         "weighted_poisson",
         "logistic",
         "weighted_logistic",
-        "iterative_poisson"
+        "iterative_poisson",
+        "iterative_logistic"
       )
     )
 
-    if (objective %in% c("poisson", "weighted_poisson") &&
+    if (objective %in% c("poisson", "weighted_poisson", "iterative_poisson") &&
         is.null(data$quadrature_weight)) {
       stop(
         "`quadrature_weight` is required for Poisson objectives.",
@@ -81,7 +82,7 @@ validate_gbpp_data <- function(data, objective = NULL) {
       )
     }
 
-    if (objective %in% c("logistic", "weighted_logistic") &&
+    if (objective %in% c("logistic", "weighted_logistic", "iterative_logistic") &&
         is.null(data$dummy_intensity)) {
       stop(
         "`dummy_intensity` is required for logistic objectives.",
@@ -101,6 +102,14 @@ validate_gbpp_data <- function(data, objective = NULL) {
         is.null(data$interaction_integral)) {
       stop(
         "`interaction_integral` is required for the iterative Poisson objective.",
+        call. = FALSE
+      )
+    }
+
+    if (objective == "iterative_logistic" &&
+        is.null(data$interaction_integral)) {
+      stop(
+        "`interaction_integral` is required for the iterative Logistic objective.",
         call. = FALSE
       )
     }

@@ -156,3 +156,30 @@ test_that("interaction_integral must match number of observations", {
     "`interaction_integral` must have one value per observation"
   )
 })
+
+test_that("iterative Logistic requires interaction_integral", {
+
+  data <- new_gbpp_data(
+    X = data.frame(
+      x1 = c(1, 2),
+      x2 = c(2, 1)
+    ),
+    y = c(1, 0),
+    locations = data.frame(
+      x = c(0, 1),
+      y = c(0, 1)
+    ),
+    dummy_intensity = c(
+      100,
+      100
+    )
+  )
+
+  expect_error(
+    validate_gbpp_data(
+      data,
+      objective = "iterative_logistic"
+    ),
+    "`interaction_integral` is required"
+  )
+})

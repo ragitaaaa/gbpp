@@ -732,3 +732,198 @@ test_that(
     )
   }
 )
+
+test_that(
+  "XGBoost iterative Logistic objective matches GBPP derivatives",
+  {
+
+    data <- new_gbpp_data(
+      X = data.frame(
+        x1 = c(1, 2, 3, 4),
+        x2 = c(4, 3, 2, 1)
+      ),
+      y = c(1, 0, 1, 0),
+      locations = data.frame(
+        x = c(0, 1, 2, 3),
+        y = c(0, 1, 2, 3)
+      ),
+      dummy_intensity = rep(
+        100,
+        4
+      ),
+      interaction_integral = c(
+        0,
+        0.5,
+        1,
+        2
+      )
+    )
+
+    prediction <- c(
+      -0.5,
+      0,
+      0.5,
+      1
+    )
+
+    expected <- gbpp_objective(
+      data = data,
+      prediction = prediction,
+      objective = "iterative_logistic"
+    )
+
+    objective <- make_xgboost_iterative_logistic_objective(
+      dummy_intensity = data$dummy_intensity,
+      interaction_integral = data$interaction_integral
+    )
+
+    xgb <- reticulate::import("xgboost")
+
+    dtrain <- xgb$DMatrix(
+      data = as.matrix(data$X),
+      label = as.numeric(data$y)
+    )
+
+    result <- objective(
+      reticulate::r_to_py(prediction),
+      dtrain
+    )
+
+    gradient <- as.numeric(
+      reticulate::py_to_r(result[[1]])
+    )
+
+    hessian <- as.numeric(
+      reticulate::py_to_r(result[[2]])
+    )
+
+    expect_equal(
+      gradient,
+      expected$gradient,
+      tolerance = 1e-12
+    )
+
+    expect_equal(
+      hessian,
+      expected$hessian,
+      tolerance = 1e-12
+    )
+  }
+)
+
+test_that(
+  "XGBoost iteratively weighted Logistic model can be trained",
+  {
+
+    data <- new_gbpp_data(
+      X = data.frame(
+        x1 = c(1, 2, 3, 4, 5, 6),
+        x2 = c(6, 5, 4, 3, 2, 1)
+      ),
+      y = c(1, 0, 1, 0, 1, 0),
+      locations = data.frame(
+        x = c(0, 1, 2, 3, 4, 5),
+        y = c(0, 1, 2, 3, 4, 5)
+      ),
+      dummy_intensity = rep(
+        100,
+        6
+      ),
+      interaction_integral = c(
+        0,
+        0.25,
+        0.5,
+        0.75,
+        0.25,
+        0.5
+      )
+    )
+
+    model <- fit_gbpp_xgboost_iterative_logistic(
+      data = data,
+      params = list(
+        eta = 0.1,
+        max_depth = 2L
+      ),
+      num_boost_round = 5L
+    )
+
+    expect_false(
+      reticulate::py_is_null_xptr(model)
+    )
+
+    xgb <- reticulate::import("xgboost")
+
+    dtest <- xgb$DMatrix(
+      data = as.matrix(data$X)
+    )
+
+    dtest$feature_names <- colnames(data$X)
+
+    predictions <- model$predict(dtest)
+
+    predictions <- as.numeric(
+      reticulate::py_to_r(predictions)
+    )
+
+    expect_length(
+      predictions,
+      nrow(data$X)
+    )
+
+    expect_true(
+      all(is.finite(predictions))
+    )
+  }
+)
+
+test_that(
+  "iterative Logistic XGBoost model remains finite with zero interaction",
+  {
+
+    data <- new_gbpp_data(
+      X = data.frame(
+        x1 = c(1, 2, 3, 4),
+        x2 = c(4, 3, 2, 1)
+      ),
+      y = c(1, 0, 1, 0),
+      locations = data.frame(
+        x = c(0, 1, 2, 3),
+        y = c(0, 1, 2, 3)
+      ),
+      dummy_intensity = rep(100, 4),
+      interaction_integral = rep(0, 4)
+    )
+
+    model <- fit_gbpp_xgboost_iterative_logistic(
+      data = data,
+      params = list(
+        eta = 0.1,
+        max_depth = 2L
+      ),
+      num_boost_round = 5L
+    )
+
+    expect_false(
+      reticulate::py_is_null_xptr(model)
+    )
+
+    xgb <- reticulate::import("xgboost")
+
+    dtest <- xgb$DMatrix(
+      data = as.matrix(data$X)
+    )
+
+    dtest$feature_names <- colnames(data$X)
+
+    predictions <- as.numeric(
+      reticulate::py_to_r(
+        model$predict(dtest)
+      )
+    )
+
+    expect_true(
+      all(is.finite(predictions))
+    )
+  }
+)

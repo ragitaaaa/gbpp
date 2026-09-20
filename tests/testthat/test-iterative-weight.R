@@ -86,3 +86,105 @@ test_that("iterative Poisson weight rejects non-positive denominator", {
     "weight is undefined"
   )
 })
+
+test_that("iterative Logistic weight follows theoretical formula", {
+
+  prediction <- log(c(1, 2, 4))
+
+  dummy_intensity <- c(
+    1,
+    2,
+    4
+  )
+
+  interaction_integral <- c(
+    0,
+    0.5,
+    1
+  )
+
+  result <- calculate_iterative_logistic_weight(
+    prediction = prediction,
+    dummy_intensity = dummy_intensity,
+    interaction_integral = interaction_integral
+  )
+
+  lambda <- exp(prediction)
+
+  expected <- (
+    lambda + dummy_intensity
+  ) / (
+    dummy_intensity *
+      (1 + lambda * interaction_integral)
+  )
+
+  expect_equal(
+    result,
+    expected,
+    tolerance = 1e-12
+  )
+})
+
+
+test_that("iterative Logistic weight is not necessarily one when interaction is zero", {
+
+  prediction <- log(c(1, 2))
+
+  dummy_intensity <- c(
+    1,
+    2
+  )
+
+  interaction_integral <- c(
+    0,
+    0
+  )
+
+  result <- calculate_iterative_logistic_weight(
+    prediction = prediction,
+    dummy_intensity = dummy_intensity,
+    interaction_integral = interaction_integral
+  )
+
+  expected <- c(
+    2,
+    2
+  )
+
+  expect_equal(
+    result,
+    expected
+  )
+})
+
+
+test_that("iterative Logistic weight remains finite for extreme predictions", {
+
+  prediction <- c(
+    -100,
+    0,
+    100
+  )
+
+  dummy_intensity <- c(
+    100,
+    100,
+    100
+  )
+
+  interaction_integral <- c(
+    0.5,
+    0.5,
+    0.5
+  )
+
+  result <- calculate_iterative_logistic_weight(
+    prediction = prediction,
+    dummy_intensity = dummy_intensity,
+    interaction_integral = interaction_integral
+  )
+
+  expect_true(
+    all(is.finite(result))
+  )
+})

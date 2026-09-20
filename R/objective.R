@@ -13,7 +13,8 @@ gbpp_objective <- function(
       "weighted_poisson",
       "logistic",
       "weighted_logistic",
-      "iterative_poisson"
+      "iterative_poisson",
+      "iterative_logistic"
     )
 ) {
 
@@ -78,6 +79,13 @@ gbpp_objective <- function(
 
     iterative_poisson = {
       calculate_iterative_poisson_derivatives(
+        data = data,
+        prediction = prediction
+      )
+    },
+
+    iterative_logistic = {
+      calculate_iterative_logistic_derivatives(
         data = data,
         prediction = prediction
       )
@@ -202,6 +210,58 @@ calculate_iterative_poisson_derivatives <- function(
   hessian <- weight *
     data$quadrature_weight *
     lambda
+
+  list(
+    gradient = gradient,
+    hessian = hessian,
+    weight = weight
+  )
+}
+
+#' Calculate derivatives for the iteratively weighted Logistic objective
+#'
+#' Calculates the gradient and Hessian of the iteratively weighted
+#' Logistic objective using the current log-intensity predictions.
+#'
+#' @param data A `gbpp_data` object containing `dummy_intensity` and
+#'   `interaction_integral`.
+#' @param prediction Numeric vector of current predicted
+#'   log-intensities.
+#'
+#' @return A list containing `gradient`, `hessian`, and `weight`.
+#'
+#' @keywords internal
+calculate_iterative_logistic_derivatives <- function(
+    data,
+    prediction
+) {
+
+  phi <- pmin(
+    pmax(prediction, -50),
+    50
+  )
+
+  lambda <- exp(phi)
+
+  delta <- data$dummy_intensity
+
+  weight <- calculate_iterative_logistic_weight(
+    prediction = phi,
+    dummy_intensity = delta,
+    interaction_integral = data$interaction_integral
+  )
+
+  pi <- stats::plogis(
+    phi - log(delta)
+  )
+
+  gradient <- weight * (
+    pi - data$y
+  )
+
+  hessian <- weight *
+    pi *
+    (1 - pi)
 
   list(
     gradient = gradient,

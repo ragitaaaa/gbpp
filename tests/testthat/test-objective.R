@@ -308,3 +308,95 @@ test_that("iterative Poisson objective is available through gbpp_objective", {
     )
   )
 })
+
+test_that(
+  "iterative Logistic objective matches theoretical derivatives",
+  {
+
+    data <- new_gbpp_data(
+      X = data.frame(
+        x1 = c(1, 2, 3, 4),
+        x2 = c(4, 3, 2, 1)
+      ),
+      y = c(1, 0, 1, 0),
+      locations = data.frame(
+        x = c(0, 1, 2, 3),
+        y = c(0, 1, 2, 3)
+      ),
+      dummy_intensity = c(
+        100,
+        100,
+        100,
+        100
+      ),
+      interaction_integral = c(
+        0,
+        0.5,
+        1,
+        2
+      )
+    )
+
+    prediction <- c(
+      -0.5,
+      0,
+      0.5,
+      1
+    )
+
+    result <- gbpp_objective(
+      data = data,
+      prediction = prediction,
+      objective = "iterative_logistic"
+    )
+
+    phi <- pmin(
+      pmax(prediction, -50),
+      50
+    )
+
+    lambda <- exp(phi)
+
+    delta <- data$dummy_intensity
+
+    expected_weight <- (
+      lambda + delta
+    ) / (
+      delta *
+        (1 + lambda * data$interaction_integral)
+    )
+
+    pi <- stats::plogis(
+      phi - log(delta)
+    )
+
+    expected_gradient <- (
+      expected_weight *
+        (pi - data$y)
+    )
+
+    expected_hessian <- (
+      expected_weight *
+        pi *
+        (1 - pi)
+    )
+
+    expect_equal(
+      result$weight,
+      expected_weight,
+      tolerance = 1e-12
+    )
+
+    expect_equal(
+      result$gradient,
+      expected_gradient,
+      tolerance = 1e-12
+    )
+
+    expect_equal(
+      result$hessian,
+      expected_hessian,
+      tolerance = 1e-12
+    )
+  }
+)

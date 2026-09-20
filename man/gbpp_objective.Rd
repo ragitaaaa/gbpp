@@ -8,7 +8,7 @@ gbpp_objective(
   data,
   prediction,
   objective = c("poisson", "weighted_poisson", "logistic", "weighted_logistic",
-    "iterative_poisson")
+    "iterative_poisson", "iterative_logistic")
 )
 }
 \arguments{

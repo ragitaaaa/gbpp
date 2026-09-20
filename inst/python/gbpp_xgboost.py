@@ -244,3 +244,89 @@ def make_iterative_poisson_objective(
         return gradient, hessian
 
     return iterative_poisson_objective
+
+def make_iterative_logistic_objective(
+    dummy_intensity,
+    interaction_integral
+):
+    """
+    Create the GBPP iteratively weighted logistic objective for XGBoost.
+
+    The spatial dependence-adjusted weight is recalculated from the
+    current log-intensity prediction at each objective evaluation.
+
+    Parameters
+    ----------
+    dummy_intensity : array-like
+        Dummy-process intensity at each quadrature point.
+
+    interaction_integral : array-like
+        Spatial interaction integral for each quadrature point.
+
+    Returns
+    -------
+    callable
+        XGBoost custom objective function.
+    """
+
+    dummy_intensity = np.asarray(
+        dummy_intensity,
+        dtype=float
+    )
+
+    interaction_integral = np.asarray(
+        interaction_integral,
+        dtype=float
+    )
+
+    log_dummy_intensity = np.log(
+        dummy_intensity
+    )
+
+    def iterative_logistic_objective(preds, dtrain):
+        phi = np.clip(
+            preds,
+            -50.0,
+            50.0
+        )
+
+        labels = dtrain.get_label()
+
+        lam = np.exp(phi)
+
+        denominator = (
+            dummy_intensity
+            * (
+                1.0
+                + lam * interaction_integral
+            )
+        )
+
+        if np.any(denominator <= 0.0):
+            raise ValueError(
+                "Iterative Logistic weight is undefined because "
+                "the weight denominator is not positive."
+            )
+
+        weight = (
+            lam + dummy_intensity
+        ) / denominator
+
+        pi = 1.0 / (
+            1.0
+            + np.exp(
+                -(phi - log_dummy_intensity)
+            )
+        )
+
+        gradient = weight * (
+            pi - labels
+        )
+
+        hessian = weight * (
+            pi * (1.0 - pi)
+        )
+
+        return gradient, hessian
+
+    return iterative_logistic_objective
