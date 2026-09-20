@@ -1,3 +1,5 @@
 ^gbpp\.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$
+^\.venv$
+^\.Renviron$

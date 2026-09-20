@@ -12,14 +12,7 @@ configure_gbpp_python <- function() {
 
   if (!nzchar(python)) {
 
-    project_root <- tryCatch(
-      {
-        pkgload::pkg_path()
-      },
-      error = function(e) {
-        getwd()
-      }
-    )
+    project_root <- getwd()
 
     project_python <- file.path(
       project_root,
