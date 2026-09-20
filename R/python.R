@@ -59,3 +59,35 @@ configure_gbpp_python <- function() {
 
   invisible(TRUE)
 }
+
+#' Locate GBPP's bundled Python backend files
+#'
+#' @return Path to the directory containing GBPP Python backend modules.
+#' @keywords internal
+gbpp_python_path <- function() {
+
+  path <- system.file(
+    "python",
+    package = "gbpp"
+  )
+
+  if (nzchar(path) && dir.exists(path)) {
+    return(path)
+  }
+
+  # Development fallback for devtools::load_all()
+  path <- file.path(
+    getwd(),
+    "inst",
+    "python"
+  )
+
+  if (dir.exists(path)) {
+    return(path)
+  }
+
+  stop(
+    "GBPP Python backend files could not be found.",
+    call. = FALSE
+  )
+}

@@ -4,6 +4,10 @@ test_that("GBPP Python environment can be configured", {
     configure_gbpp_python()
   )
 
+  expect_no_error(
+    reticulate::py_config()
+  )
+
   expect_true(
     reticulate::py_available()
   )
