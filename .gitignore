@@ -1,6 +1,13 @@
+# R
 .Rproj.user
 .Rhistory
 .RData
 .httr-oauth
 .DS_Store
 .quarto
+.Renviron
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
