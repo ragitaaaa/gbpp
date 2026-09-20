@@ -7,7 +7,8 @@
 #' @param data A `gbpp_data` object to validate.
 #' @param objective Optional objective used to determine required data
 #'   components. One of `"poisson"`, `"weighted_poisson"`, `"logistic"`,
-#'   or `"weighted_logistic"`.
+#'   `"weighted_logistic"`, `"iterative_poisson"`, or
+#'   `"iterative_logistic"`.
 #'
 #' @return Invisibly returns `TRUE` if the data object passes validation.
 #' @keywords internal
@@ -21,44 +22,71 @@ validate_gbpp_data <- function(data, objective = NULL) {
   }
 
   if (length(data$y) != nrow(data$X)) {
-    stop("`data$y` must have the same number of rows as `data$X`.",
-         call. = FALSE)
+    stop(
+      "`data$y` must have the same number of rows as `data$X`.",
+      call. = FALSE
+    )
   }
 
   if (!all(data$y %in% c(0, 1))) {
-    stop("`data$y` must contain only 0 (dummy) and 1 (event).",
-         call. = FALSE)
+    stop(
+      "`data$y` must contain only 0 (dummy) and 1 (event).",
+      call. = FALSE
+    )
   }
 
   if (nrow(data$locations) != nrow(data$X)) {
-    stop("`data$locations` must have the same number of rows as `data$X`.",
-         call. = FALSE)
+    stop(
+      "`data$locations` must have the same number of rows as `data$X`.",
+      call. = FALSE
+    )
   }
 
   if (!is.null(data$quadrature_weight) &&
       length(data$quadrature_weight) != nrow(data$X)) {
-    stop("`quadrature_weight` must have one value per observation.",
-         call. = FALSE)
+    stop(
+      "`quadrature_weight` must have one value per observation.",
+      call. = FALSE
+    )
   }
 
   if (!is.null(data$dummy_intensity) &&
       length(data$dummy_intensity) != nrow(data$X)) {
-    stop("`dummy_intensity` must have one value per observation.",
-         call. = FALSE)
+    stop(
+      "`dummy_intensity` must have one value per observation.",
+      call. = FALSE
+    )
   }
 
   if (!is.null(data$statistical_weight) &&
       length(data$statistical_weight) != nrow(data$X)) {
-    stop("`statistical_weight` must have one value per observation.",
-         call. = FALSE)
-  }
-
-  if (!is.null(data$interaction_integral) &&
-      length(data$interaction_integral) != nrow(data$X)) {
     stop(
-      "`interaction_integral` must have one value per observation.",
+      "`statistical_weight` must have one value per observation.",
       call. = FALSE
     )
+  }
+
+  if (!is.null(data$interaction_integral)) {
+    if (!is.numeric(data$interaction_integral)) {
+      stop(
+        "`interaction_integral` must be numeric.",
+        call. = FALSE
+      )
+    }
+
+    if (length(data$interaction_integral) != nrow(data$X)) {
+      stop(
+        "`interaction_integral` must have one value per observation.",
+        call. = FALSE
+      )
+    }
+
+    if (!all(is.finite(data$interaction_integral))) {
+      stop(
+        "`interaction_integral` must contain only finite values.",
+        call. = FALSE
+      )
+    }
   }
 
   if (!is.null(objective)) {
@@ -74,7 +102,8 @@ validate_gbpp_data <- function(data, objective = NULL) {
       )
     )
 
-    if (objective %in% c("poisson", "weighted_poisson", "iterative_poisson") &&
+    if (objective %in%
+        c("poisson", "weighted_poisson", "iterative_poisson") &&
         is.null(data$quadrature_weight)) {
       stop(
         "`quadrature_weight` is required for Poisson objectives.",
@@ -82,7 +111,8 @@ validate_gbpp_data <- function(data, objective = NULL) {
       )
     }
 
-    if (objective %in% c("logistic", "weighted_logistic", "iterative_logistic") &&
+    if (objective %in%
+        c("logistic", "weighted_logistic", "iterative_logistic") &&
         is.null(data$dummy_intensity)) {
       stop(
         "`dummy_intensity` is required for logistic objectives.",
@@ -113,7 +143,6 @@ validate_gbpp_data <- function(data, objective = NULL) {
         call. = FALSE
       )
     }
-
   }
 
   invisible(TRUE)

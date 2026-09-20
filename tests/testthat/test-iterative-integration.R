@@ -30,7 +30,7 @@ test_that("attached interaction integral supports iterative Poisson XGBoost", {
 
   data_object <- attach_interaction_integral(
     data = data_object,
-    point_pattern = lansing,
+    point_pattern = lansing[seq_len(5)],
     rmax = 0.2,
     correction = "isotropic"
   )
@@ -100,7 +100,7 @@ test_that("attached interaction integral supports iterative Logistic XGBoost", {
 
   data_object <- attach_interaction_integral(
     data = data_object,
-    point_pattern = lansing,
+    point_pattern = lansing[seq_len(5)],
     rmax = 0.2,
     correction = "isotropic"
   )

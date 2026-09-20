@@ -31,3 +31,9 @@ populated.
 Estimates the planar interaction integral from an observed point pattern
 and attaches the resulting value to every row of a \code{\link{gbpp_data}} object.
 }
+\details{
+Automatic interaction-integral estimation is currently supported for
+planar point patterns represented by a \code{ppp} object. For network point
+processes, the interaction integral must currently be supplied directly
+when constructing the \code{\link{gbpp_data}} object.
+}

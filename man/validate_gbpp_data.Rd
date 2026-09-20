@@ -11,7 +11,8 @@ validate_gbpp_data(data, objective = NULL)
 
 \item{objective}{Optional objective used to determine required data
 components. One of \code{"poisson"}, \code{"weighted_poisson"}, \code{"logistic"},
-or \code{"weighted_logistic"}.}
+\code{"weighted_logistic"}, \code{"iterative_poisson"}, or
+\code{"iterative_logistic"}.}
 }
 \value{
 Invisibly returns \code{TRUE} if the data object passes validation.
