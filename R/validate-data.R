@@ -35,9 +35,15 @@ validate_gbpp_data <- function(data, objective = NULL) {
     )
   }
 
-  if (nrow(data$locations) != nrow(data$X)) {
+  n_locations <- if (inherits(data$locations, "ppp")) {
+    spatstat.geom::npoints(data$locations)
+  } else {
+    nrow(data$locations)
+  }
+
+  if (n_locations != nrow(data$X)) {
     stop(
-      "`data$locations` must have the same number of rows as `data$X`.",
+      "`data$locations` must have the same number of points as `data$X`.",
       call. = FALSE
     )
   }

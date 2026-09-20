@@ -20,6 +20,28 @@
   )
 }
 
+.gbpp_xgboost_dmatrix <- function(X, y) {
+  xgb <- reticulate::import("xgboost", delay_load = FALSE)
+
+  X_matrix <- as.matrix(X)
+  labels <- as.numeric(y)
+  feature_names <- colnames(X_matrix)
+
+  if (is.null(feature_names)) {
+    return(
+      xgb$DMatrix(
+        data = X_matrix,
+        label = labels
+      )
+    )
+  }
+
+  xgb$DMatrix(
+    data = X_matrix,
+    label = labels,
+    feature_names = as.list(feature_names)
+  )
+}
 
 # ============================================================
 # Internal helper: mark fitted model
@@ -448,12 +470,10 @@ fit_gbpp_xgboost <- function(
 
   xgb <- reticulate::import("xgboost")
 
-  dtrain <- xgb$DMatrix(
-    data = as.matrix(data$X),
-    label = data$y
+  dtrain <- .gbpp_xgboost_dmatrix(
+    X = data$X,
+    y = data$y
   )
-
-  dtrain$feature_names <- colnames(data$X)
 
   objective <- make_xgboost_poisson_objective(
     data$quadrature_weight
@@ -518,12 +538,10 @@ fit_gbpp_xgboost_weighted_poisson <- function(
 
   xgb <- reticulate::import("xgboost")
 
-  dtrain <- xgb$DMatrix(
-    data = as.matrix(data$X),
-    label = data$y
+  dtrain <- .gbpp_xgboost_dmatrix(
+    X = data$X,
+    y = data$y
   )
-
-  dtrain$feature_names <- colnames(data$X)
 
   objective <- make_xgboost_weighted_poisson_objective(
     data$quadrature_weight,
@@ -589,12 +607,10 @@ fit_gbpp_xgboost_logistic <- function(
 
   xgb <- reticulate::import("xgboost")
 
-  dtrain <- xgb$DMatrix(
-    data = as.matrix(data$X),
-    label = data$y
+  dtrain <- .gbpp_xgboost_dmatrix(
+    X = data$X,
+    y = data$y
   )
-
-  dtrain$feature_names <- colnames(data$X)
 
   objective <- make_xgboost_logistic_objective(
     data$dummy_intensity
@@ -671,12 +687,10 @@ fit_gbpp_xgboost_weighted_logistic <- function(
 
   xgb <- reticulate::import("xgboost")
 
-  dtrain <- xgb$DMatrix(
-    data = as.matrix(data$X),
-    label = data$y
+  dtrain <- .gbpp_xgboost_dmatrix(
+    X = data$X,
+    y = data$y
   )
-
-  dtrain$feature_names <- colnames(data$X)
 
   objective <- make_xgboost_weighted_logistic_objective(
     data$dummy_intensity,
@@ -747,12 +761,10 @@ fit_gbpp_xgboost_iterative_poisson <- function(
 
   xgb <- reticulate::import("xgboost")
 
-  dtrain <- xgb$DMatrix(
-    data = as.matrix(data$X),
-    label = data$y
+  dtrain <- .gbpp_xgboost_dmatrix(
+    X = data$X,
+    y = data$y
   )
-
-  dtrain$feature_names <- colnames(data$X)
 
   objective <- make_xgboost_iterative_poisson_objective(
     data$quadrature_weight,
@@ -830,12 +842,10 @@ fit_gbpp_xgboost_iterative_logistic <- function(
 
   xgb <- reticulate::import("xgboost")
 
-  dtrain <- xgb$DMatrix(
-    data = as.matrix(data$X),
-    label = data$y
+  dtrain <- .gbpp_xgboost_dmatrix(
+    X = data$X,
+    y = data$y
   )
-
-  dtrain$feature_names <- colnames(data$X)
 
   objective <- make_xgboost_iterative_logistic_objective(
     data$dummy_intensity,
