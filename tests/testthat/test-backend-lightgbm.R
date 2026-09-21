@@ -182,3 +182,50 @@ test_that("LightGBM prediction works for all GBPP objectives", {
     )
   }
 })
+
+test_that("LightGBM model can predict from gbpp_data features", {
+
+  W <- spatstat.geom::owin(
+    xrange = c(0, 1),
+    yrange = c(0, 1)
+  )
+
+  pp <- spatstat.random::runifpoint(
+    n = 10,
+    win = W
+  )
+
+  covariate <- spatstat.geom::as.im(
+    function(x, y) x + y,
+    W = W
+  )
+
+  data <- prepare_gbpp(
+    point_pattern = pp,
+    covariates = list(
+      elevation = covariate
+    ),
+    nd = 10L
+  )
+
+  model <- fit_gbpp_lightgbm(
+    data = data,
+    params = list(
+      learning_rate = 0.1,
+      max_depth = 2L,
+      num_leaves = 4L,
+      min_data_in_leaf = 1L,
+      feature_pre_filter = FALSE
+    ),
+    num_boost_round = 3L
+  )
+
+  prediction <- predict(
+    model,
+    data$X
+  )
+
+  expect_type(prediction, "double")
+  expect_length(prediction, nrow(data$X))
+  expect_true(all(is.finite(prediction)))
+})

@@ -456,7 +456,7 @@ fit_gbpp_lightgbm <- function(
   dtrain <- lgb$Dataset(
     data = as.matrix(data$X),
     label = data$y,
-    feature_name = colnames(data$X)
+    feature_name = reticulate::r_to_py(as.list(colnames(data$X)))
   )
 
   objective <- make_lightgbm_poisson_objective(
@@ -524,7 +524,7 @@ fit_gbpp_lightgbm_weighted_poisson <- function(
   dtrain <- lgb$Dataset(
     data = as.matrix(data$X),
     label = data$y,
-    feature_name = colnames(data$X)
+    feature_name = reticulate::r_to_py(as.list(colnames(data$X)))
   )
 
   objective <- make_lightgbm_weighted_poisson_objective(
@@ -593,7 +593,7 @@ fit_gbpp_lightgbm_logistic <- function(
   dtrain <- lgb$Dataset(
     data = as.matrix(data$X),
     label = data$y,
-    feature_name = colnames(data$X)
+    feature_name = reticulate::r_to_py(as.list(colnames(data$X)))
   )
 
   objective <- make_lightgbm_logistic_objective(
@@ -668,7 +668,7 @@ fit_gbpp_lightgbm_weighted_logistic <- function(
   dtrain <- lgb$Dataset(
     data = as.matrix(data$X),
     label = data$y,
-    feature_name = colnames(data$X)
+    feature_name = reticulate::r_to_py(as.list(colnames(data$X)))
   )
 
   objective <- make_lightgbm_weighted_logistic_objective(
@@ -737,7 +737,7 @@ fit_gbpp_lightgbm_iterative_poisson <- function(
   dtrain <- lgb$Dataset(
     data = as.matrix(data$X),
     label = data$y,
-    feature_name = colnames(data$X)
+    feature_name = reticulate::r_to_py(as.list(colnames(data$X)))
   )
 
   objective <- make_lightgbm_iterative_poisson_objective(
@@ -813,7 +813,7 @@ fit_gbpp_lightgbm_iterative_logistic <- function(
   dtrain <- lgb$Dataset(
     data = as.matrix(data$X),
     label = data$y,
-    feature_name = colnames(data$X)
+    feature_name = reticulate::r_to_py(as.list(colnames(data$X)))
   )
 
   objective <- make_lightgbm_iterative_logistic_objective(
