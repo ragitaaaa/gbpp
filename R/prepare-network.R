@@ -5,9 +5,9 @@
 #' locations.
 #'
 #' @param point_pattern An `lpp` object containing the observed points.
-#' @param covariates A named list of `linim` covariates defined on the same
-#'   linear network as `point_pattern`. Numeric and factor-valued covariates
-#'   are supported.
+#' @param covariates A named list of `linim` or `linfun` covariates defined on
+#'   the same linear network as `point_pattern`. Numeric and factor-valued
+#'   covariates are supported.
 #' @param nd Number of dummy quadrature points per network segment, as used by
 #'   [spatstat.linnet::linequad()].
 #'
@@ -23,7 +23,10 @@ prepare_gbpp_network <- function(
   }
 
   if (!is.list(covariates)) {
-    stop("`covariates` must be a list of `linim` objects.", call. = FALSE)
+    stop(
+      "`covariates` must be a list of `linim` or `linfun` objects.",
+      call. = FALSE
+    )
   }
 
   if (length(covariates) > 0L) {
@@ -42,14 +45,15 @@ prepare_gbpp_network <- function(
 
     invalid <- !vapply(
       covariates,
-      inherits,
-      logical(1),
-      what = "linim"
+      function(z) {
+        inherits(z, "linim") || inherits(z, "linfun")
+      },
+      logical(1)
     )
 
     if (any(invalid)) {
       stop(
-        "All network covariates must be `linim` objects.",
+        "All network covariates must be `linim` or `linfun` objects.",
         call. = FALSE
       )
     }

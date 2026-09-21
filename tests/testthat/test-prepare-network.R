@@ -113,16 +113,18 @@ test_that("network preparation rejects duplicate covariate names", {
 })
 
 
-test_that("network preparation rejects non-linim covariates", {
-  fixture <- make_test_network_data()
+test_that("network preparation rejects invalid network covariates", {
+  data(chicago, package = "spatstat.data")
 
   expect_error(
     prepare_gbpp_network(
-      point_pattern = fixture$point_pattern,
-      covariates = list(x = 1),
+      point_pattern = chicago,
+      covariates = list(
+        invalid = 1:10
+      ),
       nd = 20L
     ),
-    "All network covariates must be `linim` objects"
+    "All network covariates must be `linim` or `linfun` objects."
   )
 })
 
@@ -159,4 +161,53 @@ test_that("network preparation validates nd", {
     ),
     "positive integer"
   )
+})
+
+test_that("prepare_gbpp_network accepts linfun covariates", {
+  data(chicago, package = "spatstat.data")
+
+  L <- spatstat.linnet::as.linnet(chicago)
+
+  f <- spatstat.linnet::linfun(
+    function(x, y, seg, tp) x + y,
+    L
+  )
+
+  out <- prepare_gbpp_network(
+    point_pattern = chicago,
+    covariates = list(xy_sum = f),
+    nd = 20L
+  )
+
+  expect_s3_class(out, "gbpp_data")
+  expect_equal(nrow(out$X), length(out$y))
+  expect_equal(ncol(out$X), 1L)
+  expect_identical(names(out$X), "xy_sum")
+  expect_true(all(is.finite(out$X$xy_sum)))
+})
+
+
+test_that("prepare_gbpp_network accepts linim covariates", {
+  data(chicago, package = "spatstat.data")
+
+  L <- spatstat.linnet::as.linnet(chicago)
+
+  f <- spatstat.linnet::linfun(
+    function(x, y, seg, tp) x + y,
+    L
+  )
+
+  f_im <- spatstat.linnet::as.linim(f)
+
+  out <- prepare_gbpp_network(
+    point_pattern = chicago,
+    covariates = list(xy_sum = f_im),
+    nd = 20L
+  )
+
+  expect_s3_class(out, "gbpp_data")
+  expect_equal(nrow(out$X), length(out$y))
+  expect_equal(ncol(out$X), 1L)
+  expect_identical(names(out$X), "xy_sum")
+  expect_true(all(is.finite(out$X$xy_sum)))
 })
