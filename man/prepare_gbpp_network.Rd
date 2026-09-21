@@ -9,9 +9,9 @@ prepare_gbpp_network(point_pattern, covariates = list(), nd = 1000L)
 \arguments{
 \item{point_pattern}{An \code{lpp} object containing the observed points.}
 
-\item{covariates}{A named list of \code{linim} covariates defined on the same
-linear network as \code{point_pattern}. Numeric and factor-valued covariates
-are supported.}
+\item{covariates}{A named list of \code{linim} or \code{linfun} covariates defined on
+the same linear network as \code{point_pattern}. Numeric and factor-valued
+covariates are supported.}
 
 \item{nd}{Number of dummy quadrature points per network segment, as used by
 \code{\link[spatstat.linnet:linequad]{spatstat.linnet::linequad()}}.}

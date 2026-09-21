@@ -4,8 +4,8 @@
 #' evaluate spatial covariates at the quadrature locations.
 #'
 #' @param point_pattern An `ppp` object containing the observed points.
-#' @param covariates A named list of `im` covariates defined on the same
-#'   observation window as `point_pattern`.
+#' @param covariates A named list of `im` covariates whose spatial windows
+#'   cover the observation window of `point_pattern`.
 #' @param nd Number of dummy quadrature points, as used by
 #'   [spatstat.geom::quadscheme.logi()].
 #'
@@ -52,20 +52,22 @@ prepare_gbpp <- function(
       )
     }
 
-    same_window <- vapply(
+    covariate_covers_window <- vapply(
       covariates,
       function(z) {
-        identical(z$xrange, point_pattern$window$xrange) &&
-          identical(z$yrange, point_pattern$window$yrange)
+        spatstat.geom::is.subset.owin(
+          point_pattern$window,
+          spatstat.geom::Window(z)
+        )
       },
       logical(1)
     )
 
-    if (any(!same_window)) {
+    if (any(!covariate_covers_window)) {
       stop(
         paste0(
-          "All planar covariates must have the same spatial extent ",
-          "as `point_pattern`."
+          "All planar covariates must cover the observation window ",
+          "of `point_pattern`."
         ),
         call. = FALSE
       )

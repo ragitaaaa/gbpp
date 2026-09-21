@@ -181,3 +181,53 @@ test_that("prepare_pp_data does not create dummy intensity for Poisson objective
 
   expect_null(data$dummy_intensity)
 })
+
+test_that(
+  "prepare_gbpp accepts covariate images that cover the point-pattern window",
+  {
+    data(bei, package = "spatstat.data")
+
+    covariate <- bei.extra$elev
+
+    expect_false(
+      identical(
+        spatstat.geom::Window(bei),
+        spatstat.geom::Window(covariate)
+      )
+    )
+
+    expect_true(
+      spatstat.geom::is.subset.owin(
+        spatstat.geom::Window(bei),
+        spatstat.geom::Window(covariate)
+      )
+    )
+
+    data <- prepare_gbpp(
+      point_pattern = bei,
+      covariates = list(elevation = covariate),
+      nd = 20L
+    )
+
+    expect_s3_class(data, "gbpp_data")
+
+    expect_equal(
+      nrow(data$X),
+      length(data$y)
+    )
+
+    expect_identical(
+      colnames(data$X),
+      "elevation"
+    )
+
+    expect_true(
+      all(is.finite(data$X$elevation))
+    )
+
+    expect_equal(
+      data$type,
+      "planar"
+    )
+  }
+)
