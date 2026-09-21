@@ -89,7 +89,10 @@ predict.gbpp_xgboost <- function(object, newdata, ...) {
       )
     }
 
+    feature_names <- colnames(newdata)
     newdata <- as.matrix(newdata)
+  } else {
+    feature_names <- colnames(newdata)
   }
 
   if (!is.numeric(newdata)) {
@@ -108,12 +111,15 @@ predict.gbpp_xgboost <- function(object, newdata, ...) {
 
   xgb <- reticulate::import("xgboost")
 
-  dtest <- xgb$DMatrix(
-    data = newdata
-  )
-
-  if (!is.null(colnames(newdata))) {
-    dtest$feature_names <- colnames(newdata)
+  if (is.null(feature_names)) {
+    dtest <- xgb$DMatrix(
+      data = newdata
+    )
+  } else {
+    dtest <- xgb$DMatrix(
+      data = newdata,
+      feature_names = reticulate::r_to_py(as.list(feature_names))
+    )
   }
 
   predictions <- object$predict(
@@ -121,7 +127,7 @@ predict.gbpp_xgboost <- function(object, newdata, ...) {
     ...
   )
 
-  reticulate::py_to_r(predictions)
+  as.numeric(reticulate::py_to_r(predictions))
 }
 
 
