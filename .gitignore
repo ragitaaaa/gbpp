@@ -11,3 +11,7 @@
 .venv/
 __pycache__/
 *.py[cod]
+
+# CatBoost generated training artifacts
+catboost_info/
+tests/testthat/catboost_info/

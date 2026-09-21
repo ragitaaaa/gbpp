@@ -226,28 +226,23 @@ make_catboost_iterative_logistic_objective <- function(
     )
   }
 
-  if (!is.matrix(data$X)) {
+  X <- as.matrix(data$X)
+
+  if (!is.numeric(X)) {
     stop(
-      "`data$X` must be a matrix.",
+      "`data$X` must contain only numeric columns.",
       call. = FALSE
     )
   }
 
-  if (!is.numeric(data$X)) {
-    stop(
-      "`data$X` must be numeric.",
-      call. = FALSE
-    )
-  }
-
-  if (any(!is.finite(data$X))) {
+  if (any(!is.finite(X))) {
     stop(
       "`data$X` must contain only finite values.",
       call. = FALSE
     )
   }
 
-  if (length(data$y) != nrow(data$X)) {
+  if (length(data$y) != nrow(X)) {
     stop(
       "`data$y` must have the same number of observations as `data$X`.",
       call. = FALSE
@@ -306,7 +301,7 @@ make_catboost_iterative_logistic_objective <- function(
   )
 
   model$fit(
-    X = data$X,
+    X = X,
     y = data$y
   )
 
