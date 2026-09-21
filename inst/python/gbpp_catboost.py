@@ -55,7 +55,55 @@ def _get_weights(weights, n):
     return weights
 
 
-class PoissonObjective:
+class _BatchObjective:
+    """
+    Manage sequential batches supplied by CatBoost.
+
+    CatBoost may call calc_ders_range() with only a subset of the
+    training observations. The subset is supplied in the original
+    observation order. This class maps each batch back to the
+    corresponding slice of the full observation-level arrays.
+    """
+
+    def __init__(self, n_obs):
+        self._n_obs = int(n_obs)
+        self._offset = 0
+
+    def _next_batch(self, n):
+        """
+        Return the starting index of the next CatBoost batch.
+
+        The cursor is reset after a complete pass through all
+        observations.
+        """
+        n = int(n)
+
+        if n < 0:
+            raise ValueError("Batch size must be non-negative.")
+
+        if self._offset == self._n_obs:
+            self._offset = 0
+
+        if self._offset + n > self._n_obs:
+            raise ValueError(
+                "CatBoost batch exceeds the stored observation range: "
+                f"offset={self._offset}, batch_size={n}, "
+                f"n_obs={self._n_obs}."
+            )
+
+        start = self._offset
+        self._offset += n
+
+        return start
+
+    def _batch_slice(self, values, start, n, name):
+        """Return the observation-level values for the current batch."""
+        _check_length(values, self._n_obs, name)
+
+        return values[start:start + n]
+
+
+class PoissonObjective(_BatchObjective):
     """GBPP ordinary Poisson objective."""
 
     def __init__(self, quadrature_weight):
@@ -63,6 +111,8 @@ class PoissonObjective:
             quadrature_weight,
             "quadrature_weight",
         )
+
+        super().__init__(len(self.quadrature_weight))
 
     def calc_ders_range(self, approxes, targets, weights):
         """
@@ -81,8 +131,12 @@ class PoissonObjective:
         n = len(targets)
 
         _check_length(approxes, n, "approxes")
-        _check_length(
+
+        start = self._next_batch(n)
+
+        quadrature_weight = self._batch_slice(
             self.quadrature_weight,
+            start,
             n,
             "quadrature_weight",
         )
@@ -95,12 +149,12 @@ class PoissonObjective:
             lam = _safe_exp(approxes[i])
 
             gradient = (
-                self.quadrature_weight[i] * lam
+                quadrature_weight[i] * lam
                 - targets[i]
             )
 
             hessian = (
-                self.quadrature_weight[i] * lam
+                quadrature_weight[i] * lam
             )
 
             gradient *= catboost_weights[i]
@@ -113,7 +167,7 @@ class PoissonObjective:
         return result
 
 
-class WeightedPoissonObjective:
+class WeightedPoissonObjective(_BatchObjective):
     """GBPP fixed weighted Poisson objective."""
 
     def __init__(
@@ -137,6 +191,8 @@ class WeightedPoissonObjective:
             "statistical_weight",
         )
 
+        super().__init__(len(self.quadrature_weight))
+
     def calc_ders_range(self, approxes, targets, weights):
         """
         Calculate CatBoost derivatives.
@@ -154,13 +210,19 @@ class WeightedPoissonObjective:
         n = len(targets)
 
         _check_length(approxes, n, "approxes")
-        _check_length(
+
+        start = self._next_batch(n)
+
+        quadrature_weight = self._batch_slice(
             self.quadrature_weight,
+            start,
             n,
             "quadrature_weight",
         )
-        _check_length(
+
+        statistical_weight = self._batch_slice(
             self.statistical_weight,
+            start,
             n,
             "statistical_weight",
         )
@@ -171,15 +233,15 @@ class WeightedPoissonObjective:
 
         for i in range(n):
             lam = _safe_exp(approxes[i])
-            w = self.statistical_weight[i]
+            w = statistical_weight[i]
 
             gradient = w * (
-                self.quadrature_weight[i] * lam
+                quadrature_weight[i] * lam
                 - targets[i]
             )
 
             hessian = w * (
-                self.quadrature_weight[i] * lam
+                quadrature_weight[i] * lam
             )
 
             gradient *= catboost_weights[i]
@@ -192,7 +254,7 @@ class WeightedPoissonObjective:
         return result
 
 
-class LogisticObjective:
+class LogisticObjective(_BatchObjective):
     """GBPP logistic objective with dummy-process intensity."""
 
     def __init__(self, dummy_intensity):
@@ -205,6 +267,8 @@ class LogisticObjective:
             raise ValueError(
                 "dummy_intensity must be strictly positive."
             )
+
+        super().__init__(len(self.dummy_intensity))
 
     def calc_ders_range(self, approxes, targets, weights):
         """
@@ -226,8 +290,12 @@ class LogisticObjective:
         n = len(targets)
 
         _check_length(approxes, n, "approxes")
-        _check_length(
+
+        start = self._next_batch(n)
+
+        dummy_intensity = self._batch_slice(
             self.dummy_intensity,
+            start,
             n,
             "dummy_intensity",
         )
@@ -242,7 +310,7 @@ class LogisticObjective:
                 _CLIP_MAX,
             )
 
-            delta = self.dummy_intensity[i]
+            delta = dummy_intensity[i]
 
             pi = 1.0 / (
                 1.0
@@ -265,7 +333,7 @@ class LogisticObjective:
         return result
 
 
-class WeightedLogisticObjective:
+class WeightedLogisticObjective(_BatchObjective):
     """GBPP fixed weighted logistic objective."""
 
     def __init__(
@@ -294,6 +362,8 @@ class WeightedLogisticObjective:
             "statistical_weight",
         )
 
+        super().__init__(len(self.dummy_intensity))
+
     def calc_ders_range(self, approxes, targets, weights):
         """
         Calculate CatBoost derivatives.
@@ -311,13 +381,19 @@ class WeightedLogisticObjective:
         n = len(targets)
 
         _check_length(approxes, n, "approxes")
-        _check_length(
+
+        start = self._next_batch(n)
+
+        dummy_intensity = self._batch_slice(
             self.dummy_intensity,
+            start,
             n,
             "dummy_intensity",
         )
-        _check_length(
+
+        statistical_weight = self._batch_slice(
             self.statistical_weight,
+            start,
             n,
             "statistical_weight",
         )
@@ -332,7 +408,7 @@ class WeightedLogisticObjective:
                 _CLIP_MAX,
             )
 
-            delta = self.dummy_intensity[i]
+            delta = dummy_intensity[i]
 
             pi = 1.0 / (
                 1.0
@@ -341,7 +417,7 @@ class WeightedLogisticObjective:
                 )
             )
 
-            w = self.statistical_weight[i]
+            w = statistical_weight[i]
 
             gradient = w * (
                 pi - targets[i]
@@ -361,7 +437,7 @@ class WeightedLogisticObjective:
         return result
 
 
-class IterativePoissonObjective:
+class IterativePoissonObjective(_BatchObjective):
     """GBPP iteratively weighted Poisson objective."""
 
     def __init__(
@@ -385,6 +461,8 @@ class IterativePoissonObjective:
             "interaction_integral",
         )
 
+        super().__init__(len(self.quadrature_weight))
+
     def calc_ders_range(self, approxes, targets, weights):
         """
         Calculate CatBoost derivatives.
@@ -407,13 +485,19 @@ class IterativePoissonObjective:
         n = len(targets)
 
         _check_length(approxes, n, "approxes")
-        _check_length(
+
+        start = self._next_batch(n)
+
+        quadrature_weight = self._batch_slice(
             self.quadrature_weight,
+            start,
             n,
             "quadrature_weight",
         )
-        _check_length(
+
+        interaction_integral = self._batch_slice(
             self.interaction_integral,
+            start,
             n,
             "interaction_integral",
         )
@@ -427,7 +511,7 @@ class IterativePoissonObjective:
 
             denominator = (
                 1.0
-                + lam * self.interaction_integral[i]
+                + lam * interaction_integral[i]
             )
 
             if denominator <= 0.0:
@@ -439,12 +523,12 @@ class IterativePoissonObjective:
             weight = 1.0 / denominator
 
             gradient = weight * (
-                self.quadrature_weight[i] * lam
+                quadrature_weight[i] * lam
                 - targets[i]
             )
 
             hessian = weight * (
-                self.quadrature_weight[i] * lam
+                quadrature_weight[i] * lam
             )
 
             gradient *= catboost_weights[i]
@@ -457,7 +541,7 @@ class IterativePoissonObjective:
         return result
 
 
-class IterativeLogisticObjective:
+class IterativeLogisticObjective(_BatchObjective):
     """GBPP iteratively weighted logistic objective."""
 
     def __init__(
@@ -485,6 +569,8 @@ class IterativeLogisticObjective:
             len(self.dummy_intensity),
             "interaction_integral",
         )
+
+        super().__init__(len(self.dummy_intensity))
 
     def calc_ders_range(self, approxes, targets, weights):
         """
@@ -518,13 +604,19 @@ class IterativeLogisticObjective:
         n = len(targets)
 
         _check_length(approxes, n, "approxes")
-        _check_length(
+
+        start = self._next_batch(n)
+
+        dummy_intensity = self._batch_slice(
             self.dummy_intensity,
+            start,
             n,
             "dummy_intensity",
         )
-        _check_length(
+
+        interaction_integral = self._batch_slice(
             self.interaction_integral,
+            start,
             n,
             "interaction_integral",
         )
@@ -539,13 +631,13 @@ class IterativeLogisticObjective:
                 _CLIP_MAX,
             )
 
-            delta = self.dummy_intensity[i]
+            delta = dummy_intensity[i]
 
             lam = math.exp(eta)
 
             denominator = (
                 1.0
-                + lam * self.interaction_integral[i]
+                + lam * interaction_integral[i]
             )
 
             if denominator <= 0.0:
