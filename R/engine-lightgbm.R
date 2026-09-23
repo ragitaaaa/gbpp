@@ -148,3 +148,26 @@ make_lightgbm_iterative_logistic_objective <- function(dummy_intensity, interact
   class(raw_model) <- c("gbpp_lightgbm", "gbpp_model", class(raw_model))
   raw_model
 }
+
+# ============================================================
+# SHAP Extraction
+# ============================================================
+
+#' @export
+.gbpp_shap.gbpp_lightgbm <- function(object, newdata, ...) {
+  configure_gbpp_python()
+  
+  if (!is.null(attr(object, "feature_names"))) {
+    newdata <- newdata[, attr(object, "feature_names"), drop = FALSE]
+  }
+
+  shap_vals <- object$predict(as.matrix(newdata), pred_contrib = TRUE)
+  
+  colnames(shap_vals) <- c(attr(object, "feature_names"), "bias")
+  
+  list(
+    shap = shap_vals[, -ncol(shap_vals), drop = FALSE],
+    bias = shap_vals[, ncol(shap_vals)]
+  )
+}
+

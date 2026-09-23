@@ -177,3 +177,28 @@ make_xgboost_iterative_logistic_objective <- function(dummy_intensity, interacti
   class(raw_model) <- c("gbpp_xgboost", "gbpp_model", class(raw_model))
   raw_model
 }
+
+# ============================================================
+# SHAP Extraction
+# ============================================================
+
+#' @export
+.gbpp_shap.gbpp_xgboost <- function(object, newdata, ...) {
+  configure_gbpp_python()
+  
+  # Ensure newdata only contains the features used during training
+  if (!is.null(attr(object, "feature_names"))) {
+    newdata <- newdata[, attr(object, "feature_names"), drop = FALSE]
+  }
+
+  dmat <- .gbpp_xgboost_dmatrix(X = newdata)
+  shap_vals <- object$predict(dmat, pred_contribs = TRUE)
+  
+  colnames(shap_vals) <- c(attr(object, "feature_names"), "bias")
+  
+  list(
+    shap = shap_vals[, -ncol(shap_vals), drop = FALSE],
+    bias = shap_vals[, ncol(shap_vals)]
+  )
+}
+

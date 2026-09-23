@@ -212,3 +212,38 @@ make_catboost_iterative_logistic_objective <- function(dummy_intensity, interact
   class(raw_model) <- c("gbpp_catboost", "gbpp_model", class(raw_model))
   raw_model
 }
+
+# ============================================================
+# SHAP Extraction
+# ============================================================
+
+#' @export
+.gbpp_shap.gbpp_catboost <- function(object, newdata, ...) {
+  configure_gbpp_python()
+  
+  if (!is.null(attr(object, "feature_names"))) {
+    newdata <- newdata[, attr(object, "feature_names"), drop = FALSE]
+  }
+
+  catboost <- .gbpp_catboost()
+  
+  # Check categorical features for Pool creation
+  params <- attr(object, "params")
+  cat_features <- params$cat_features
+  
+  if (is.data.frame(newdata) && !is.null(cat_features)) {
+      pool <- catboost$Pool(data = newdata, cat_features = cat_features)
+  } else {
+      pool <- catboost$Pool(data = as.matrix(newdata))
+  }
+  
+  shap_vals <- object$get_feature_importance(data = pool, type = "ShapValues")
+  
+  colnames(shap_vals) <- c(attr(object, "feature_names"), "bias")
+  
+  list(
+    shap = shap_vals[, -ncol(shap_vals), drop = FALSE],
+    bias = shap_vals[, ncol(shap_vals)]
+  )
+}
+
