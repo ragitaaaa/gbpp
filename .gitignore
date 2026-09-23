@@ -1,20 +1,30 @@
-# R
-.Rproj.user
+# R runtime artifacts & session state
 .Rhistory
 .RData
+.RDataTmp
+.Rproj.user/
+.Renviron
 .httr-oauth
 .DS_Store
-.quarto
-.Renviron
+.quarto/
 
-# Python
+# Build and check outputs
+*.tar.gz
+*.Rcheck/
+
+# Python environments & caches
 .venv/
 __pycache__/
 *.py[cod]
+*.pyc
 
-# CatBoost generated training artifacts
+# Engine telemetry & training artifacts
 catboost_info/
 tests/testthat/catboost_info/
+
+# Local scratch and environment overrides
+scratch/
+.env
 
 # Local development and thesis work
 development/
