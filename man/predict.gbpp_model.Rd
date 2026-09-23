@@ -4,7 +4,12 @@
 \alias{predict.gbpp_model}
 \title{Predict from a Fitted GBPP Model}
 \usage{
-\method{predict}{gbpp_model}(object, newdata, type = c("link", "intensity", "raw"), ...)
+\method{predict}{gbpp_model}(
+  object,
+  newdata,
+  type = c("link", "intensity", "raw", "im", "linim"),
+  ...
+)
 }
 \arguments{
 \item{object}{A fitted model of class \code{gbpp_model}.}
