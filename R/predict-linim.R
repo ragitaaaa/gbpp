@@ -61,7 +61,7 @@
     
     if (any(valid)) {
       df_valid <- df[valid, feature_names, drop = FALSE]
-      out[valid] <- predict.gbpp_model(object, newdata = df_valid, type = "intensity", ...)
+      out[valid] <- predict.gbpp_model(object, newdata = df_valid, type = "intensity")
     }
     out
   }
