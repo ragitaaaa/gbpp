@@ -185,13 +185,13 @@ predict.gbpp_catboost <- function(object, newdata, ...) {
 print.gbpp_model <- function(x, ...) {
   cat("Gradient Boosted Point Process Model\n")
   cat("------------------------------------\n")
-  cat("Engine          :", x$engine, "\n")
-  cat("Objective       :", x$objective, "\n")
-  cat("Number of trees :", x$n_trees, "\n")
-  cat("Baseline (eta0) :", round(x$baseline, 4), sprintf("(lambda0 = %.4f)\n", exp(x$baseline)))
-  cat("Features (p)    :", length(x$feature_names), "\n")
-  if (length(x$feature_names) > 0L) {
-    cat("Feature names   :", paste(x$feature_names, collapse = ", "), "\n")
+  cat("Engine          :", attr(x, "engine"), "\n")
+  cat("Objective       :", attr(x, "objective"), "\n")
+  cat("Number of trees :", attr(x, "n_trees"), "\n")
+  cat("Baseline (eta0) :", round(attr(x, "baseline"), 4), sprintf("(lambda0 = %.4f)\n", exp(attr(x, "baseline"))))
+  cat("Features (p)    :", length(attr(x, "feature_names")), "\n")
+  if (length(attr(x, "feature_names")) > 0L) {
+    cat("Feature names   :", paste(attr(x, "feature_names"), collapse = ", "), "\n")
   }
   invisible(x)
 }
