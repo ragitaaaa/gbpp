@@ -20,10 +20,17 @@
 predict.gbpp_model <- function(
     object,
     newdata,
-    type = c("link", "intensity", "raw"),
+    type = c("link", "intensity", "raw", "im", "linim"),
     ...
 ) {
   type <- match.arg(type)
+
+  if (type == "im") {
+    return(.gbpp_predict_im(object, newdata, ...))
+  }
+  if (type == "linim") {
+    return(.gbpp_predict_linim(object, newdata, ...))
+  }
 
   if (missing(newdata) || is.null(newdata)) {
     stop("`newdata` must be supplied.", call. = FALSE)
@@ -62,6 +69,7 @@ predict.gbpp_model <- function(
     engine,
 
     xgboost = {
+      if (!reticulate::py_available(initialize = TRUE)) stop("Python not available")
       if (is.data.frame(newdata)) {
         if (!all(vapply(newdata, is.numeric, logical(1)))) {
           stop("`newdata` for XGBoost must contain only numeric columns.", call. = FALSE)
@@ -89,6 +97,7 @@ predict.gbpp_model <- function(
     },
 
     lightgbm = {
+      if (!reticulate::py_available(initialize = TRUE)) stop("Python not available")
       if (is.data.frame(newdata)) {
         if (!all(vapply(newdata, is.numeric, logical(1)))) {
           stop("`newdata` for LightGBM must contain only numeric columns.", call. = FALSE)
@@ -107,6 +116,7 @@ predict.gbpp_model <- function(
     },
 
     catboost = {
+      if (!reticulate::py_available(initialize = TRUE)) stop("Python not available")
       if (is.matrix(newdata)) {
         if (!is.numeric(newdata) || any(!is.finite(newdata))) {
           stop("`newdata` matrix must contain finite numeric values.", call. = FALSE)
