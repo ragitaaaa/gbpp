@@ -1,5 +1,5 @@
 make_network_integration_fixture <- function(n = 8L) {
-  data(simplenet, package = "spatstat.data")
+  simplenet <- spatstat.data::simplenet
 
   point_pattern <- spatstat.linnet::runiflpp(
     n = n,

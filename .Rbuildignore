@@ -3,3 +3,6 @@
 ^LICENSE\.md$
 ^\.venv$
 ^\.Renviron$
+^development$
+^catboost_info$
+^scratch$

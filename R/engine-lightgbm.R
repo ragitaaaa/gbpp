@@ -1,0 +1,150 @@
+# ============================================================
+# GBPP - LightGBM Backend Engine
+# ============================================================
+
+.gbpp_lightgbm_module <- function() {
+  configure_gbpp_python()
+  python_path <- gbpp_python_path()
+
+  reticulate::import_from_path(
+    module = "gbpp_lightgbm",
+    path = python_path
+  )
+}
+
+# ============================================================
+# Objective factories
+# ============================================================
+
+#' @keywords internal
+make_lightgbm_poisson_objective <- function(quadrature_weight) {
+  module <- .gbpp_lightgbm_module()
+  module$make_poisson_objective(quadrature_weight = quadrature_weight)
+}
+
+#' @keywords internal
+make_lightgbm_weighted_poisson_objective <- function(quadrature_weight, statistical_weight) {
+  module <- .gbpp_lightgbm_module()
+  module$make_weighted_poisson_objective(
+    quadrature_weight = quadrature_weight,
+    statistical_weight = statistical_weight
+  )
+}
+
+#' @keywords internal
+make_lightgbm_logistic_objective <- function(dummy_intensity) {
+  module <- .gbpp_lightgbm_module()
+  module$make_logistic_objective(dummy_intensity = dummy_intensity)
+}
+
+#' @keywords internal
+make_lightgbm_weighted_logistic_objective <- function(dummy_intensity, statistical_weight) {
+  module <- .gbpp_lightgbm_module()
+  module$make_weighted_logistic_objective(
+    dummy_intensity = dummy_intensity,
+    statistical_weight = statistical_weight
+  )
+}
+
+#' @keywords internal
+make_lightgbm_iterative_poisson_objective <- function(quadrature_weight, interaction_integral) {
+  module <- .gbpp_lightgbm_module()
+  module$make_iterative_poisson_objective(
+    quadrature_weight = quadrature_weight,
+    interaction_integral = interaction_integral
+  )
+}
+
+#' @keywords internal
+make_lightgbm_iterative_logistic_objective <- function(dummy_intensity, interaction_integral) {
+  module <- .gbpp_lightgbm_module()
+  module$make_iterative_logistic_objective(
+    dummy_intensity = dummy_intensity,
+    interaction_integral = interaction_integral
+  )
+}
+
+# ============================================================
+# Internal Engine Fitting Function
+# ============================================================
+
+.gbpp_fit_lightgbm <- function(
+    data,
+    objective,
+    params,
+    n_trees,
+    baseline = NULL,
+    ...
+) {
+  validate_gbpp_data(data, objective = objective)
+  configure_gbpp_python()
+
+  lgb <- reticulate::import("lightgbm", delay_load = FALSE)
+
+  if (is.null(baseline)) {
+    if (objective %in% c("poisson", "weighted_poisson")) {
+      lambda0 <- sum(data$y) / sum(data$quadrature_weight)
+      if (lambda0 <= 0 || !is.finite(lambda0)) {
+        stop("Initial Poisson intensity must be positive and finite.", call. = FALSE)
+      }
+      baseline <- log(lambda0)
+    } else {
+      baseline <- 0.0
+    }
+  }
+
+  feature_names <- colnames(data$X)
+  init_score <- if (!is.null(baseline) && baseline != 0.0) {
+    rep(as.numeric(baseline), nrow(data$X))
+  } else {
+    NULL
+  }
+
+  dtrain <- lgb$Dataset(
+    data = as.matrix(data$X),
+    label = data$y,
+    feature_name = if (!is.null(feature_names)) reticulate::r_to_py(as.list(feature_names)) else "auto",
+    init_score = init_score
+  )
+
+  py_objective <- switch(
+    objective,
+    poisson = make_lightgbm_poisson_objective(data$quadrature_weight),
+    weighted_poisson = make_lightgbm_weighted_poisson_objective(data$quadrature_weight, data$statistical_weight),
+    logistic = make_lightgbm_logistic_objective(data$dummy_intensity),
+    weighted_logistic = make_lightgbm_weighted_logistic_objective(data$dummy_intensity, data$statistical_weight),
+    iterative_poisson = make_lightgbm_iterative_poisson_objective(data$quadrature_weight, data$interaction_integral),
+    iterative_logistic = make_lightgbm_iterative_logistic_objective(data$dummy_intensity, data$interaction_integral)
+  )
+
+  params$objective <- py_objective
+
+  extra_args <- list(...)
+  extra_args$num_boost_round <- NULL
+  extra_args$nrounds <- NULL
+
+  train_args <- c(
+    list(
+      params = params,
+      train_set = dtrain,
+      num_boost_round = as.integer(n_trees)
+    ),
+    extra_args
+  )
+
+  raw_model <- do.call(lgb$train, train_args)
+
+  attr(raw_model, "engine") <- "lightgbm"
+  attr(raw_model, "objective") <- objective
+  attr(raw_model, "baseline") <- baseline
+  attr(raw_model, "feature_names") <- feature_names
+  attr(raw_model, "params") <- params
+  attr(raw_model, "n_trees") <- n_trees
+  attr(raw_model, "data_info") <- list(
+    n_obs = nrow(data$X),
+    n_events = sum(data$y == 1),
+    type = data$type
+  )
+  class(raw_model) <- c("gbpp_lightgbm", "gbpp_model", class(raw_model))
+  raw_model
+}

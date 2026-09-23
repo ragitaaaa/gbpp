@@ -1,0 +1,48 @@
+test_that("all 18 legacy shims execute correctly with backward compatibility", {
+  configure_gbpp_python()
+  skip_if_not(reticulate::py_available(initialize = TRUE), message = "Python is not available.")
+
+  data <- make_small_gbpp_data()
+
+  # XGBoost shims
+  m1 <- fit_gbpp_xgboost(data, nrounds = 2L)
+  expect_s3_class(m1, "gbpp_xgboost")
+  m2 <- fit_gbpp_xgboost_weighted_poisson(data, nrounds = 2L)
+  expect_s3_class(m2, "gbpp_xgboost")
+  m3 <- fit_gbpp_xgboost_logistic(data, nrounds = 2L)
+  expect_s3_class(m3, "gbpp_xgboost")
+  m4 <- fit_gbpp_xgboost_weighted_logistic(data, num_boost_round = 2L)
+  expect_s3_class(m4, "gbpp_xgboost")
+  m5 <- fit_gbpp_xgboost_iterative_poisson(data, num_boost_round = 2L)
+  expect_s3_class(m5, "gbpp_xgboost")
+  m6 <- fit_gbpp_xgboost_iterative_logistic(data, num_boost_round = 2L)
+  expect_s3_class(m6, "gbpp_xgboost")
+
+  # LightGBM shims
+  l1 <- fit_gbpp_lightgbm(data, num_boost_round = 2L)
+  expect_s3_class(l1, "gbpp_lightgbm")
+  l2 <- fit_gbpp_lightgbm_weighted_poisson(data, num_boost_round = 2L)
+  expect_s3_class(l2, "gbpp_lightgbm")
+  l3 <- fit_gbpp_lightgbm_logistic(data, num_boost_round = 2L)
+  expect_s3_class(l3, "gbpp_lightgbm")
+  l4 <- fit_gbpp_lightgbm_weighted_logistic(data, num_boost_round = 2L)
+  expect_s3_class(l4, "gbpp_lightgbm")
+  l5 <- fit_gbpp_lightgbm_iterative_poisson(data, num_boost_round = 2L)
+  expect_s3_class(l5, "gbpp_lightgbm")
+  l6 <- fit_gbpp_lightgbm_iterative_logistic(data, num_boost_round = 2L)
+  expect_s3_class(l6, "gbpp_lightgbm")
+
+  # CatBoost shims
+  c1 <- fit_gbpp_catboost(data, nrounds = 2L)
+  expect_s3_class(c1, "gbpp_catboost")
+  c2 <- fit_gbpp_catboost_weighted_poisson(data, nrounds = 2L)
+  expect_s3_class(c2, "gbpp_catboost")
+  c3 <- fit_gbpp_catboost_logistic(data, nrounds = 2L)
+  expect_s3_class(c3, "gbpp_catboost")
+  c4 <- fit_gbpp_catboost_weighted_logistic(data, nrounds = 2L)
+  expect_s3_class(c4, "gbpp_catboost")
+  c5 <- fit_gbpp_catboost_iterative_poisson(data, nrounds = 2L)
+  expect_s3_class(c5, "gbpp_catboost")
+  c6 <- fit_gbpp_catboost_iterative_logistic(data, nrounds = 2L)
+  expect_s3_class(c6, "gbpp_catboost")
+})
