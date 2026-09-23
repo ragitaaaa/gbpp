@@ -244,20 +244,22 @@ test_that("iterative Poisson objective matches theoretical derivatives", {
     1 / 2,
     1 / 3
   )
+  mean_wt <- mean(expected_weight)
+  expected_weight <- expected_weight / mean_wt
 
   expected_gradient <- c(
     -0.8,
     0.2,
     -0.3,
     1 / 6
-  )
+  ) / mean_wt
 
   expected_hessian <- c(
     0.2,
     0.2,
     0.2,
     1 / 6
-  )
+  ) / mean_wt
 
   expect_equal(
     result$weight,
@@ -365,6 +367,7 @@ test_that(
       delta *
         (1 + lambda * data$interaction_integral)
     )
+    expected_weight <- expected_weight / mean(expected_weight)
 
     pi <- stats::plogis(
       phi - log(delta)

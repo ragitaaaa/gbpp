@@ -30,6 +30,7 @@ test_that("iterative Poisson weight follows theoretical formula", {
     1 / 1.5,
     1 / 2
   )
+  expected <- expected / mean(expected)
 
   expect_equal(
     result,
@@ -52,6 +53,7 @@ test_that("iterative Poisson weight uses current intensity", {
     1 +
       c(2, 1, 0.5) * 0.5
   )
+  expected <- expected / mean(expected)
 
   expect_equal(
     result,
@@ -117,6 +119,7 @@ test_that("iterative Logistic weight follows theoretical formula", {
     dummy_intensity *
       (1 + lambda * interaction_integral)
   )
+  expected <- expected / mean(expected)
 
   expect_equal(
     result,
@@ -150,6 +153,7 @@ test_that("iterative Logistic weight is not necessarily one when interaction is 
     2,
     2
   )
+  expected <- expected / mean(expected)
 
   expect_equal(
     result,

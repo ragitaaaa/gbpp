@@ -58,7 +58,8 @@ calculate_iterative_poisson_weight <- function(
     )
   }
 
-  1 / denominator
+  weight <- 1 / denominator
+  weight / mean(weight)
 }
 
 #' Calculate iteratively updated logistic weights
@@ -123,5 +124,6 @@ calculate_iterative_logistic_weight <- function(
     )
   }
 
-  (lambda + dummy_intensity) / denominator
+  weight <- (lambda + dummy_intensity) / denominator
+  weight / mean(weight)
 }

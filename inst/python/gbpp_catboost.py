@@ -504,23 +504,21 @@ class IterativePoissonObjective(_BatchObjective):
 
         catboost_weights = _get_weights(weights, n)
 
+        lams = np.array([_safe_exp(approxes[i]) for i in range(n)])
+        denominators = 1.0 + lams * interaction_integral
+        if np.any(denominators <= 0.0):
+            raise ValueError(
+                "Iterative Poisson weight denominator "
+                "must be positive."
+            )
+        weights = 1.0 / denominators
+        weights = weights / np.mean(weights)
+
         result = []
 
         for i in range(n):
-            lam = _safe_exp(approxes[i])
-
-            denominator = (
-                1.0
-                + lam * interaction_integral[i]
-            )
-
-            if denominator <= 0.0:
-                raise ValueError(
-                    "Iterative Poisson weight denominator "
-                    "must be positive."
-                )
-
-            weight = 1.0 / denominator
+            lam = lams[i]
+            weight = weights[i]
 
             gradient = weight * (
                 quadrature_weight[i] * lam
@@ -623,6 +621,16 @@ class IterativeLogisticObjective(_BatchObjective):
 
         catboost_weights = _get_weights(weights, n)
 
+        lams = np.array([math.exp(min(max(approxes[i], _CLIP_MIN), _CLIP_MAX)) for i in range(n)])
+        denominators = 1.0 + lams * interaction_integral
+        if np.any(denominators <= 0.0):
+            raise ValueError(
+                "Iterative Logistic weight denominator "
+                "must be positive."
+            )
+        weights = (lams + dummy_intensity) / (dummy_intensity * denominators)
+        weights = weights / np.mean(weights)
+
         result = []
 
         for i in range(n):
@@ -633,26 +641,7 @@ class IterativeLogisticObjective(_BatchObjective):
 
             delta = dummy_intensity[i]
 
-            lam = math.exp(eta)
-
-            denominator = (
-                1.0
-                + lam * interaction_integral[i]
-            )
-
-            if denominator <= 0.0:
-                raise ValueError(
-                    "Iterative Logistic weight denominator "
-                    "must be positive."
-                )
-
-            weight = (
-                (lam + delta)
-                / (
-                    delta
-                    * denominator
-                )
-            )
+            weight = weights[i]
 
             pi = 1.0 / (
                 1.0

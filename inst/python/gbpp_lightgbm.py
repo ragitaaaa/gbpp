@@ -292,6 +292,7 @@ def make_iterative_poisson_objective(
             )
 
         weight = 1.0 / denominator
+        weight = weight / np.mean(weight)
 
         gradient = weight * (
             quadrature_weight * lam
@@ -381,6 +382,7 @@ def make_iterative_logistic_objective(
                 * denominator
             )
         )
+        weight = weight / np.mean(weight)
 
         pi = 1.0 / (
             1.0
