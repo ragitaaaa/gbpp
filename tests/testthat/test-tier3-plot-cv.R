@@ -1,24 +1,22 @@
 test_that("plot.gbpp_cv executes without error", {
-  res_folds <- list(
-    list(expected_events = 10.5, observed_events = 11, deviance = 20),
-    list(expected_events = 14.2, observed_events = 14, deviance = 18),
-    list(expected_events = 12.0, observed_events = 12, deviance = 19)
-  )
+  skip_if_not_installed("spatstat.geom")
   
-  metrics <- list(
-    loglik_mean = -10,
-    loglik_sd = 1,
-    deviance_mean = 19,
-    deviance_sd = 1
-  )
+  set.seed(42)
+  X <- data.frame(x1 = runif(100), x2 = runif(100))
+  y <- c(rep(1, 40), rep(0, 60))
+  locations <- data.frame(x = runif(100), y = runif(100))
+  w <- c(rep(0, 40), runif(60))
   
-  mock_cv <- structure(
-    list(metrics = metrics, folds = res_folds),
-    class = "gbpp_cv"
-  )
+  data <- new_gbpp_data(X = X, y = y, locations = locations, quadrature_weight = w, type = "planar", window = spatstat.geom::square(1))
   
-  # Ensure the plot runs cleanly
-  pdf(file = NULL)
-  expect_silent(plot(mock_cv))
-  dev.off()
+  res <- cv_gbpp(data, engine = "xgboost", params = list(eta = 0.1, max_depth = 2L), nrounds = 5L, folds = 3L)
+  
+  # Just test that plotting doesn't throw errors
+  expect_silent({
+    # Send plot to a null device to avoid popping up windows during testing
+    pdf(NULL)
+    on.exit(dev.off())
+    plot(res, separate = TRUE)
+    plot(res, separate = FALSE)
+  })
 })

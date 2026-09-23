@@ -88,9 +88,6 @@ cv_gbpp <- function(data, engine = c("xgboost", "lightgbm", "catboost"), params,
     ll <- metric_poisson_loglik(pred_full, data_test$y, data_test$quadrature_weight, p_scale = p_test)
     dev <- metric_poisson_deviance(pred_full, data_test$y, data_test$quadrature_weight, p_scale = p_test)
     
-    expected_events <- sum(data_test$quadrature_weight * pred_full * p_test)
-    observed_events <- sum(data_test$y)
-    
     ll_res[k] <- ll
     dev_res[k] <- dev
     
@@ -98,10 +95,10 @@ cv_gbpp <- function(data, engine = c("xgboost", "lightgbm", "catboost"), params,
       predictions = pred_full,
       y = data_test$y,
       w = data_test$quadrature_weight,
+      locations = data_test$locations,
+      window = data_test$window,
       loglik = ll,
-      deviance = dev,
-      expected_events = expected_events,
-      observed_events = observed_events
+      deviance = dev
     )
   }
   
@@ -115,7 +112,8 @@ cv_gbpp <- function(data, engine = c("xgboost", "lightgbm", "catboost"), params,
   structure(
     list(
       metrics = metrics,
-      folds = res_folds
+      folds = res_folds,
+      type = data$type
     ),
     class = "gbpp_cv"
   )
