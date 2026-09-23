@@ -28,3 +28,8 @@ scratch/
 
 # Local development and thesis work
 development/
+
+# Documentation and agent instructions
+.antigravity/
+docs/
+references/
