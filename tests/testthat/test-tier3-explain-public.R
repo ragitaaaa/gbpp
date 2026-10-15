@@ -1,4 +1,5 @@
 test_that("explain_gbpp public generic works correctly", {
+  skip_on_cran()
   skip_if_not(reticulate::py_available(initialize = TRUE), "Python not available")
   
   configure_gbpp_python()

@@ -1,4 +1,5 @@
 test_that(".gbpp_shap works across all backends", {
+  skip_on_cran()
   skip_if_not(reticulate::py_available(initialize = TRUE), "Python not available")
   
   configure_gbpp_python()

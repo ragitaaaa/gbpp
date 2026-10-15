@@ -1,3 +1,4 @@
-test_that("multiplication works", {
-  expect_equal(2 * 2, 4)
+test_that("package metadata is valid", {
+  ver <- utils::packageVersion("gbpp")
+  expect_true(is.package_version(ver))
 })

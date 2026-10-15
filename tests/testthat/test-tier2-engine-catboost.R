@@ -1,4 +1,7 @@
 test_that("CatBoost backend fits and predicts all GBPP objectives", {
+  skip_on_cran()
+  skip_if_not(reticulate::py_available(initialize = TRUE), "Python is not available.")
+  skip_if_not(reticulate::py_module_available("catboost"), "CatBoost Python package is not available.")
 
   data <- new_gbpp_data(
     X = matrix(

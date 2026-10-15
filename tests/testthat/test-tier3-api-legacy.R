@@ -1,6 +1,7 @@
 test_that("all 18 legacy shims execute correctly with backward compatibility", {
-  configure_gbpp_python()
+  skip_on_cran()
   skip_if_not(reticulate::py_available(initialize = TRUE), message = "Python is not available.")
+  configure_gbpp_python()
 
   data <- make_small_gbpp_data()
 

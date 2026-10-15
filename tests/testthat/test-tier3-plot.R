@@ -1,4 +1,5 @@
 test_that("plot.gbpp_model works for planar im", {
+  skip_on_cran()
   skip_if_not(reticulate::py_available(initialize = TRUE), "Python not available")
   
   configure_gbpp_python()

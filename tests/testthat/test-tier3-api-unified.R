@@ -1,6 +1,7 @@
 test_that("fit_gbpp fits across all engines with unified API", {
-  configure_gbpp_python()
+  skip_on_cran()
   skip_if_not(reticulate::py_available(initialize = TRUE), message = "Python is not available.")
+  configure_gbpp_python()
 
   data <- make_small_gbpp_data()
 
@@ -45,8 +46,9 @@ test_that("fit_gbpp fits across all engines with unified API", {
 })
 
 test_that("predict.gbpp_model respects type contract: intensity, link, and raw", {
-  configure_gbpp_python()
+  skip_on_cran()
   skip_if_not(reticulate::py_available(initialize = TRUE), message = "Python is not available.")
+  configure_gbpp_python()
 
   data <- make_small_gbpp_data()
 

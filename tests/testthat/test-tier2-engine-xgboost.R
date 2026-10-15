@@ -1,3 +1,5 @@
+testthat::skip_on_cran()
+
 test_that("XGBoost Poisson objective matches the GBPP reference objective", {
 
   skip_if_not(

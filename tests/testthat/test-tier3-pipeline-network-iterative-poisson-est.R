@@ -1,4 +1,8 @@
 test_that("network iterative Poisson works with estimated interaction", {
+  skip_on_cran()
+  skip_if_not_installed("spatstat.linnet")
+  skip_if_not(reticulate::py_available(initialize = TRUE), "Python is not available.")
+  skip_if_not(reticulate::py_module_available("xgboost"), "XGBoost is not available.")
   set.seed(123)
 
   fixture <- make_network_integration_fixture(n = 30L)

@@ -1,4 +1,5 @@
 test_that("network iterative Poisson integrates with XGBoost", {
+  skip_on_cran()
   skip_if_not_installed("spatstat.linnet")
   skip_if_not(
     reticulate::py_available(),

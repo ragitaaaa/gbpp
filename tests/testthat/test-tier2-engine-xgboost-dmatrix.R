@@ -1,4 +1,5 @@
 test_that("XGBoost DMatrix handles one feature", {
+  skip_on_cran()
   skip_if_not(
     reticulate::py_available(),
     message = "Python is not available."
@@ -24,6 +25,7 @@ test_that("XGBoost DMatrix handles one feature", {
 
 
 test_that("XGBoost DMatrix handles multiple features", {
+  skip_on_cran()
   skip_if_not(
     reticulate::py_available(),
     message = "Python is not available."

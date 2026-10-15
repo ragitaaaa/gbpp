@@ -1,4 +1,5 @@
 test_that("predict(type = 'linim') works correctly", {
+  skip_on_cran()
   skip_if_not(reticulate::py_available(initialize = TRUE), "Python not available")
   
   configure_gbpp_python()

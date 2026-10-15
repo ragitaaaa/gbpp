@@ -1,4 +1,6 @@
 test_that("GBPP Python environment can be configured", {
+  skip_on_cran()
+  skip_if_not(reticulate::py_available(initialize = TRUE), "Python is not available.")
 
   expect_no_error(
     configure_gbpp_python()
@@ -15,6 +17,8 @@ test_that("GBPP Python environment can be configured", {
 
 
 test_that("GBPP Python environment provides required modelling packages", {
+  skip_on_cran()
+  skip_if_not(reticulate::py_available(initialize = TRUE), "Python is not available.")
 
   configure_gbpp_python()
 
