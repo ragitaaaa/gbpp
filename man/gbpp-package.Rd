@@ -6,7 +6,7 @@
 \alias{gbpp-package}
 \title{gbpp: Gradient Boosting for Point Processes}
 \description{
-Provides methods for fitting gradient boosting models to univariate spatial point processes using point-process-specific objective functions and multiple gradient boosting backends.
+Fits gradient boosted point process models to univariate spatial point patterns on planar domains and linear networks. Implements point-process-specific loss functions including Berman-Turner weighted Poisson pseudo-likelihood and logistic likelihood with negative sampling. Interfaces with gradient boosting backends including 'xgboost' (Chen and Guestrin, 2016 \doi{10.1145/2939672.2939785}), 'lightgbm' (Ke et al., 2017), and 'catboost' (Prokhorenkova et al., 2018 \doi{10.48550/arXiv.1706.09516}) via 'reticulate' Python interoperability. Supports stochastic thinning spatial cross-validation, partial dependence plots, Accumulated Local Effects, and SHAP explainability.
 }
 \author{
 \strong{Maintainer}: Rendi Andria Gita Putra \email{ragita.dev@gmail.com}
@@ -14,6 +14,7 @@ Provides methods for fitting gradient boosting models to univariate spatial poin
 Authors:
 \itemize{
   \item Rendi Andria Gita Putra \email{ragita.dev@gmail.com}
+  \item Achmad Choiruddin \email{choiruddin@its.ac.id}
 }
 
 }
