@@ -173,12 +173,20 @@ estimate_network_interaction_integral <- function(
 
   r_grid <- seq(from = 0, to = rmax, length.out = nr)
 
-  g_hat <- spatstat.linnet::linearpcfinhom(
-    X = point_pattern,
-    lambda = lambda,
-    r = r_grid,
-    correction = correction
-  )
+  if (is.null(lambda)) {
+    g_hat <- spatstat.linnet::linearpcf(
+      X = point_pattern,
+      r = r_grid,
+      correction = correction
+    )
+  } else {
+    g_hat <- spatstat.linnet::linearpcfinhom(
+      X = point_pattern,
+      lambda = lambda,
+      r = r_grid,
+      correction = correction
+    )
+  }
 
   g_values <- g_hat$est
 
@@ -290,7 +298,7 @@ attach_network_interaction_integral <- function(
     stop("Estimated interaction integral contains non-finite values.", call. = FALSE)
   }
 
-  data$interaction_integral <- interaction_integral
+  data$interaction_integral <- pmax(0, interaction_integral)
   validate_gbpp_data(data)
   data
 }

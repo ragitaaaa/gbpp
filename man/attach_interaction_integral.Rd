@@ -9,7 +9,7 @@ attach_interaction_integral(
   point_pattern,
   rmax,
   lambda = NULL,
-  correction = c("isotropic", "translate", "border")
+  correction = c("translate", "isotropic", "border")
 )
 }
 \arguments{

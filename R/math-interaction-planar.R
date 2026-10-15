@@ -39,10 +39,7 @@ calculate_interaction_integral <- function(
     )
   }
 
-  interaction_integral <- (
-    K_value -
-      pi * rmax^2
-  )
+  interaction_integral <- K_value - pi * rmax^2
 
   if (!is.finite(interaction_integral)) {
     stop(
@@ -79,8 +76,8 @@ estimate_interaction_integral <- function(
     rmax,
     lambda = NULL,
     correction = c(
-      "isotropic",
       "translate",
+      "isotropic",
       "border"
     )
 ) {
@@ -92,6 +89,10 @@ estimate_interaction_integral <- function(
       "`point_pattern` must be a planar `spatstat` point pattern (`ppp`).",
       call. = FALSE
     )
+  }
+
+  if (correction == "isotropic" && spatstat.geom::is.mask(spatstat.geom::Window(point_pattern))) {
+    correction <- "translate"
   }
 
   if (length(rmax) != 1L ||
@@ -221,7 +222,7 @@ attach_interaction_integral <- function(
     point_pattern,
     rmax,
     lambda = NULL,
-    correction = c("isotropic", "translate", "border")
+    correction = c("translate", "isotropic", "border")
 ) {
   correction <- match.arg(correction)
 

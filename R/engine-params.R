@@ -81,7 +81,8 @@
         seed = random_seed,
         verbosity = if (verbose) 1L else -1L,
         num_leaves = as.integer(min(2L^max_depth, 131072L)),
-        min_data_in_leaf = 1L
+        min_data_in_leaf = 5L,
+        min_sum_hessian_in_leaf = 1.0
       )
       utils::modifyList(base, user_params)
     },

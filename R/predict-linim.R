@@ -39,25 +39,37 @@
   }
 
   f_predict <- function(x, y, seg, tp) {
+    n_pts <- length(x)
     df <- data.frame(
       x = as.numeric(x),
       y = as.numeric(y)
     )
     
     if (length(feature_names) > 0 && length(covariates) > 0) {
-      # Construct lpp efficiently using pre-computed seg and tp
-      p_lpp <- spatstat.linnet::lpp(
-        data.frame(x = df$x, y = df$y, seg = seg, tp = tp), 
-        network
+      p_lpp <- tryCatch(
+        spatstat.linnet::as.lpp(data.frame(x = df$x, y = df$y, seg = seg, tp = tp), L = network),
+        error = function(e) {
+          spatstat.linnet::lpp(spatstat.geom::ppp(df$x, df$y, window = spatstat.geom::Window(network)), network)
+        }
       )
       for (f in feature_names) {
         if (f %in% c("x", "y")) next
-        df[[f]] <- as.numeric(covariates[[f]][p_lpp])
+        vals <- tryCatch(as.numeric(covariates[[f]][p_lpp]), error = function(e) numeric(0))
+        if (length(vals) != n_pts || anyNA(vals)) {
+          fill_val <- as.numeric(mean(as.numeric(covariates[[f]]$v), na.rm = TRUE))
+          if (is.na(fill_val)) fill_val <- 0.0
+          if (length(vals) != n_pts) {
+            vals <- rep(fill_val, n_pts)
+          } else {
+            vals[is.na(vals)] <- fill_val
+          }
+        }
+        df[[f]] <- vals
       }
     }
     
     valid <- complete.cases(df)
-    out <- rep(NA_real_, length(x))
+    out <- rep(NA_real_, n_pts)
     
     if (any(valid)) {
       df_valid <- df[valid, feature_names, drop = FALSE]

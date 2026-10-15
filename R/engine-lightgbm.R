@@ -100,11 +100,32 @@ make_lightgbm_iterative_logistic_objective <- function(dummy_intensity, interact
     NULL
   }
 
+  if (nrow(data$X) < 20L) {
+    if (is.null(params$min_data_in_bin) || params$min_data_in_bin > 1L) {
+      params$min_data_in_bin <- 1L
+    }
+    if (is.null(params$min_data_in_leaf) || params$min_data_in_leaf > 1L) {
+      params$min_data_in_leaf <- 1L
+    }
+    if (is.null(params$min_sum_hessian_in_leaf) || params$min_sum_hessian_in_leaf > 1e-3) {
+      params$min_sum_hessian_in_leaf <- 1e-3
+    }
+  }
+
+  ds_params <- list()
+  if (!is.null(params$min_data_in_bin)) {
+    ds_params$min_data_in_bin <- as.integer(params$min_data_in_bin)
+  }
+  if (!is.null(params$min_data_in_leaf)) {
+    ds_params$min_data_in_leaf <- as.integer(params$min_data_in_leaf)
+  }
+
   dtrain <- lgb$Dataset(
     data = as.matrix(data$X),
     label = data$y,
     feature_name = if (!is.null(feature_names)) reticulate::r_to_py(as.list(feature_names)) else "auto",
-    init_score = init_score
+    init_score = init_score,
+    params = if (length(ds_params) > 0) ds_params else NULL
   )
 
   py_objective <- switch(
