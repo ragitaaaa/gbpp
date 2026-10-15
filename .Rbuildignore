@@ -13,3 +13,5 @@ catboost_info(/|$)
 ^\.quarto(/|$)
 ^cran-comments\.md$
 ^\.github(/|$)
+__pycache__(/|$)
+\.pyc$
