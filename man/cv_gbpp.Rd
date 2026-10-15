@@ -16,7 +16,8 @@ cv_gbpp(
 \arguments{
 \item{data}{A \code{gbpp_data} object.}
 
-\item{engine}{Character string specifying the engine: \code{"xgboost"}, \code{"lightgbm"}, or \code{"catboost"}.}
+\item{engine}{Character string specifying the engine: \code{"xgboost"},
+\code{"lightgbm"}, or \code{"catboost"}.}
 
 \item{params}{List of engine-specific hyperparameters.}
 
@@ -30,8 +31,9 @@ cv_gbpp(
 An object of class \code{gbpp_cv} containing \code{metrics} and \code{folds}.
 }
 \description{
-Evaluates spatial point process gradient boosted models using independent stochastic thinning.
-By independently dividing the observed events into K folds and retaining the full spatial
-quadrature dummy points in all folds, this method produces mathematically exact out-of-sample
-sub-processes without corrupting spatial integrals.
+Evaluates spatial point process gradient boosted models using independent
+stochastic thinning. By independently dividing the observed events into K
+folds and retaining the full spatial quadrature dummy points in all folds,
+this method produces mathematically exact out-of-sample sub-processes
+without corrupting spatial integrals.
 }

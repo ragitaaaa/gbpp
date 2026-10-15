@@ -41,14 +41,30 @@ configure_gbpp_python <- function() {
       curr <- parent
     }
 
+    if (is.null(candidate) || !file.exists(candidate)) {
+      if (tryCatch(reticulate::virtualenv_exists("r-gbpp"), error = function(e) FALSE)) {
+        reticulate::use_virtualenv("r-gbpp", required = TRUE)
+        return(invisible(TRUE))
+      }
+      if (tryCatch(reticulate::condaenv_exists("r-gbpp"), error = function(e) FALSE)) {
+        reticulate::use_condaenv("r-gbpp", required = TRUE)
+        return(invisible(TRUE))
+      }
+      disc <- tryCatch(reticulate::py_discover_config(), error = function(e) NULL)
+      if (!is.null(disc) && nzchar(disc$python) && file.exists(disc$python)) {
+        candidate <- disc$python
+      }
+    }
+
     if (!is.null(candidate) && file.exists(candidate)) {
       python <- candidate
     } else {
       stop(
         paste0(
-          "GBPP Python environment could not be found. ",
-          "Set the `GBPP_PYTHON` environment variable or ",
-          "create a project-local `.venv` environment."
+          "GBPP Python environment could not be found.\n",
+          "You can automatically set up a dedicated environment with all required packages by running:\n",
+          "  gbpp::install_gbpp_python()\n",
+          "Or configure an existing Python interpreter via `Sys.setenv(GBPP_PYTHON = 'path/to/python')`."
         ),
         call. = FALSE
       )
@@ -105,4 +121,33 @@ gbpp_python_path <- function() {
     "GBPP Python backend files could not be found.",
     call. = FALSE
   )
+}
+
+#' Install Python dependencies for GBPP
+#'
+#' Automatically creates an isolated virtual environment (`"r-gbpp"`) and
+#' installs the required Python dependencies: `numpy`, `scipy`, `xgboost`,
+#' `lightgbm`, and `catboost`.
+#'
+#' @param envname Name of the Python virtual environment. Default is `"r-gbpp"`.
+#' @param method Method passed to [reticulate::py_install()], e.g. `"auto"`, `"virtualenv"`, or `"conda"`.
+#' @param ... Additional arguments passed to [reticulate::py_install()].
+#'
+#' @return Invisibly returns `TRUE` on success.
+#' @export
+install_gbpp_python <- function(
+    envname = "r-gbpp",
+    method = "auto",
+    ...
+) {
+  pkgs <- c("numpy", "scipy", "xgboost", "lightgbm", "catboost")
+  message("Installing GBPP Python dependencies (", paste(pkgs, collapse = ", "), ") into environment '", envname, "'...")
+  reticulate::py_install(
+    packages = pkgs,
+    envname = envname,
+    method = method,
+    ...
+  )
+  message("GBPP Python dependencies installed successfully!")
+  invisible(TRUE)
 }

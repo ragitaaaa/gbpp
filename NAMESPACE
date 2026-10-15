@@ -47,6 +47,7 @@ export(fit_gbpp_xgboost_weighted_logistic)
 export(fit_gbpp_xgboost_weighted_poisson)
 export(gbpp_objective)
 export(gbpp_python_path)
+export(install_gbpp_python)
 export(metric_poisson_deviance)
 export(metric_poisson_loglik)
 export(new_gbpp_data)
@@ -54,3 +55,8 @@ export(prepare_gbpp)
 export(prepare_gbpp_network)
 export(prepare_pp_data)
 export(validate_gbpp_data)
+importFrom(stats,
+  complete.cases,
+  predict,
+  sd
+)

@@ -1,3 +1,4 @@
+#' @importFrom stats complete.cases predict sd
 #' @keywords internal
 "_PACKAGE"
 
