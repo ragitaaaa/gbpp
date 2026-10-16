@@ -58,6 +58,85 @@ extract_dummy_intensity <- function(Q) {
   rho
 }
 
+#' Calculate the effective dummy intensity for a planar quadrature scheme
+#'
+#' Calculates the homogeneous dummy intensity implied by a planar
+#' Berman-Turner quadrature scheme:
+#'
+#' \deqn{
+#' \delta = \frac{m}{|W|}
+#' }
+#'
+#' where `m` is the number of dummy points and `|W|` is the total window
+#' area represented by the observation window (or quadrature weights).
+#'
+#' @param y Binary response vector with `1` for data points and `0` for
+#'   dummy points.
+#' @param quadrature_weight Positive Berman-Turner quadrature weights, or
+#'   an observation window (`owin`).
+#'
+#' @return A positive numeric scalar giving the effective homogeneous dummy
+#'   intensity per unit area.
+#' @export
+calculate_planar_dummy_intensity <- function(
+    y,
+    quadrature_weight
+) {
+  if (!is.numeric(y) ||
+      length(y) == 0L ||
+      anyNA(y) ||
+      any(!is.finite(y)) ||
+      any(!y %in% c(0, 1))) {
+    stop(
+      "`y` must be a non-empty finite binary numeric vector.",
+      call. = FALSE
+    )
+  }
+
+  if (inherits(quadrature_weight, "owin")) {
+    window_area <- spatstat.geom::area(quadrature_weight)
+  } else {
+    if (!is.numeric(quadrature_weight) ||
+        length(quadrature_weight) != length(y) ||
+        anyNA(quadrature_weight) ||
+        any(!is.finite(quadrature_weight)) ||
+        any(quadrature_weight <= 0)) {
+      stop(
+        "`quadrature_weight` must be a positive finite numeric vector with the same length as `y`, or an `owin` window.",
+        call. = FALSE
+      )
+    }
+    window_area <- sum(quadrature_weight)
+  }
+
+  n_dummy <- sum(y == 0)
+
+  if (n_dummy <= 0) {
+    stop(
+      "At least one dummy point is required.",
+      call. = FALSE
+    )
+  }
+
+  if (!is.finite(window_area) || window_area <= 0) {
+    stop(
+      "The total window area must be positive and finite.",
+      call. = FALSE
+    )
+  }
+
+  dummy_intensity <- n_dummy / window_area
+
+  if (!is.finite(dummy_intensity) || dummy_intensity <= 0) {
+    stop(
+      "Failed to calculate a positive finite dummy intensity.",
+      call. = FALSE
+    )
+  }
+
+  dummy_intensity
+}
+
 #' Calculate the effective dummy intensity for a network quadrature scheme
 #'
 #' Calculates the homogeneous dummy intensity implied by a linear-network

@@ -231,3 +231,91 @@ test_that(
     )
   }
 )
+
+test_that("prepare_gbpp defaults to Berman-Turner quadrature with exact counting weights", {
+  W <- spatstat.geom::owin(c(0, 1), c(0, 1))
+  pp <- spatstat.random::runifpoint(10, win = W)
+  
+  data <- prepare_gbpp(
+    point_pattern = pp,
+    nd = 10L
+  )
+  
+  expect_s3_class(data, "gbpp_data")
+  expect_equal(data$metadata$quadrature_method, "berman_turner")
+  expect_equal(sum(data$quadrature_weight), 1.0, tolerance = 1e-6)
+  expect_equal(sum(data$y == 1), 10L)
+  expect_true(sum(data$y == 0) > 0)
+  expect_type(data$dummy_intensity, "double")
+  expect_equal(length(data$dummy_intensity), length(data$y))
+  expect_equal(data$dummy_intensity[1], sum(data$y == 0) / 1.0)
+})
+
+test_that("prepare_gbpp supports logistic quadrature scheme with grid and poisson dummy points", {
+  W <- spatstat.geom::owin(c(0, 1), c(0, 1))
+  pp <- spatstat.random::runifpoint(10, win = W)
+  
+  # Grid dummy points
+  data_grid <- prepare_gbpp(
+    point_pattern = pp,
+    nd = 10L,
+    quadrature_method = "logistic",
+    dummytype = "grid"
+  )
+  
+  expect_equal(data_grid$metadata$quadrature_method, "logistic")
+  expect_equal(data_grid$metadata$dummytype, "grid")
+  expect_type(data_grid$dummy_intensity, "double")
+  expect_equal(data_grid$dummy_intensity[1], 100) # nd^2 = 100
+  
+  # Poisson random dummy points
+  data_pois <- prepare_gbpp(
+    point_pattern = pp,
+    nd = 10L,
+    quadrature_method = "logistic",
+    dummytype = "poisson"
+  )
+  
+  expect_equal(data_pois$metadata$quadrature_method, "logistic")
+  expect_equal(data_pois$metadata$dummytype, "poisson")
+  expect_type(data_pois$dummy_intensity, "double")
+  expect_equal(data_pois$dummy_intensity[1], 100)
+})
+
+test_that("prepare_gbpp auto-selects quadrature scheme from objective", {
+  W <- spatstat.geom::owin(c(0, 1), c(0, 1))
+  pp <- spatstat.random::runifpoint(10, win = W)
+  
+  data_poiss <- prepare_gbpp(pp, nd = 10L, objective = "poisson")
+  expect_equal(data_poiss$metadata$quadrature_method, "berman_turner")
+  
+  data_logi <- prepare_gbpp(pp, nd = 10L, objective = "logistic")
+  expect_equal(data_logi$metadata$quadrature_method, "logistic")
+})
+
+test_that("prepare_pp_data supports iterative_poisson and iterative_logistic", {
+  W <- spatstat.geom::owin(c(0, 1), c(0, 1))
+  pp <- spatstat.random::runifpoint(5, win = W)
+  
+  Q_bt <- spatstat.geom::quadscheme(pp, nd = 10)
+  X <- data.frame(x1 = seq_len(length(spatstat.geom::is.data(Q_bt))))
+  
+  data_iter_p <- prepare_pp_data(
+    Q = Q_bt,
+    X = X,
+    objective = "iterative_poisson"
+  )
+  expect_s3_class(data_iter_p, "gbpp_data")
+  expect_null(data_iter_p$dummy_intensity)
+  
+  Q_logi <- spatstat.geom::quadscheme.logi(pp, nd = 10)
+  X_logi <- data.frame(x1 = seq_len(length(spatstat.geom::is.data(Q_logi))))
+  data_iter_l <- prepare_pp_data(
+    Q = Q_logi,
+    X = X_logi,
+    objective = "iterative_logistic"
+  )
+  expect_s3_class(data_iter_l, "gbpp_data")
+  expect_type(data_iter_l$dummy_intensity, "double")
+})
+

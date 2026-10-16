@@ -1,12 +1,24 @@
 #' Prepare a GBPP planar point-process data object
 #'
-#' Construct Berman-Turner quadrature data for a planar point process and
-#' evaluate spatial covariates at the quadrature locations.
+#' Construct quadrature data for a planar point process and
+#' evaluate spatial covariates at the quadrature locations. Supports both
+#' classical Berman-Turner quadrature (with cell counting weights for Poisson
+#' objectives) and logistic quadrature schemes (with dummy-process intensity
+#' for logistic objectives).
 #'
 #' @param point_pattern An `ppp` object containing the observed points.
 #' @param covariates A named list of `im` covariates whose spatial windows
 #'   cover the observation window of `point_pattern`.
-#' @param nd Number of dummy quadrature points along each coordinate axis, as used by
+#' @param nd Number of dummy quadrature points along each coordinate axis. Default is `1000L`.
+#' @param quadrature_method Quadrature construction method: `"berman_turner"`
+#'   (default, uses [spatstat.geom::quadscheme()] with counting weights for Poisson likelihood)
+#'   or `"logistic"` (uses [spatstat.geom::quadscheme.logi()] for logistic likelihood).
+#' @param dummytype Dummy point generation type for logistic quadrature: `"grid"` (default)
+#'   or `"poisson"` (random dummy points according to a Poisson process).
+#' @param objective Optional objective name (e.g. `"poisson"` or `"logistic"`). If supplied
+#'   and `quadrature_method` is omitted, automatically aligns the quadrature scheme:
+#'   `"logistic"` for logistic objectives and `"berman_turner"` for Poisson objectives.
+#' @param ... Additional arguments passed to [spatstat.geom::quadscheme()] or
 #'   [spatstat.geom::quadscheme.logi()].
 #'
 #' @return A `gbpp_data` object with `type = "planar"`.
@@ -14,7 +26,11 @@
 prepare_gbpp <- function(
     point_pattern,
     covariates = list(),
-    nd = 1000L
+    nd = 1000L,
+    quadrature_method = c("berman_turner", "logistic"),
+    dummytype = c("grid", "poisson"),
+    objective = NULL,
+    ...
 ) {
   if (!inherits(point_pattern, "ppp")) {
     stop("`point_pattern` must be a `ppp` object.", call. = FALSE)
@@ -91,14 +107,44 @@ prepare_gbpp <- function(
 
   nd <- as.integer(nd)
 
-  Q <- spatstat.geom::quadscheme.logi(
-    point_pattern,
-    dummytype = "grid",
-    nd = nd
-  )
+  if (missing(quadrature_method) && !is.null(objective)) {
+    quadrature_method <- if (objective %in% c("logistic", "weighted_logistic", "iterative_logistic")) {
+      "logistic"
+    } else {
+      "berman_turner"
+    }
+  } else {
+    quadrature_method <- match.arg(quadrature_method)
+  }
 
-  U <- spatstat.geom::union.quad(Q)
-  y <- as.integer(spatstat.geom::is.data(Q))
+  dummytype <- match.arg(dummytype)
+
+  if (quadrature_method == "berman_turner") {
+    Q <- spatstat.geom::quadscheme(
+      point_pattern,
+      nd = nd,
+      ...
+    )
+    U <- spatstat.geom::union.quad(Q)
+    y <- as.integer(spatstat.geom::is.data(Q))
+    v <- spatstat.geom::w.quad(Q)
+    delta <- calculate_planar_dummy_intensity(
+      y = y,
+      quadrature_weight = point_pattern$window
+    )
+    dummy_intensity <- rep(delta, length(y))
+  } else {
+    Q <- spatstat.geom::quadscheme.logi(
+      point_pattern,
+      dummytype = dummytype,
+      nd = nd,
+      ...
+    )
+    U <- spatstat.geom::union.quad(Q)
+    y <- as.integer(spatstat.geom::is.data(Q))
+    v <- spatstat.geom::w.quad(Q)
+    dummy_intensity <- extract_dummy_intensity(Q)
+  }
 
   X <- data.frame(
     row.names = seq_len(length(y)),
@@ -130,26 +176,24 @@ prepare_gbpp <- function(
     )
   }
 
-  data <- prepare_pp_data(
-    Q = Q,
+  locations <- as.data.frame(spatstat.geom::coords(U))
+
+  new_gbpp_data(
     X = X,
-    objective = "logistic",
-    type = "planar"
-  )
-
-  data$window <- point_pattern$window
-
-  data$metadata <- c(
-    data$metadata,
-    list(
+    y = y,
+    locations = locations,
+    quadrature_weight = v,
+    dummy_intensity = dummy_intensity,
+    window = point_pattern$window,
+    type = "planar",
+    metadata = list(
       point_pattern = point_pattern,
       quadrature = Q,
       covariates = covariates,
-      quadrature_method = "quadscheme.logi"
+      quadrature_method = quadrature_method,
+      dummytype = if (quadrature_method == "logistic") dummytype else "grid"
     )
   )
-
-  data
 }
 
 #' Convert a spatstat quadrature scheme to a GBPP data object
@@ -169,7 +213,9 @@ prepare_pp_data <- function(
       "poisson",
       "weighted_poisson",
       "logistic",
-      "weighted_logistic"
+      "weighted_logistic",
+      "iterative_poisson",
+      "iterative_logistic"
     ),
     type = c("planar", "network"),
     statistical_weight = NULL
@@ -218,7 +264,7 @@ prepare_pp_data <- function(
 
   dummy_intensity <- NULL
 
-  if (objective %in% c("logistic", "weighted_logistic")) {
+  if (objective %in% c("logistic", "weighted_logistic", "iterative_logistic")) {
     dummy_intensity <- extract_dummy_intensity(Q)
   }
 

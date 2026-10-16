@@ -4,7 +4,15 @@
 \alias{prepare_gbpp}
 \title{Prepare a GBPP planar point-process data object}
 \usage{
-prepare_gbpp(point_pattern, covariates = list(), nd = 1000L)
+prepare_gbpp(
+  point_pattern,
+  covariates = list(),
+  nd = 1000L,
+  quadrature_method = c("berman_turner", "logistic"),
+  dummytype = c("grid", "poisson"),
+  objective = NULL,
+  ...
+)
 }
 \arguments{
 \item{point_pattern}{An \code{ppp} object containing the observed points.}
@@ -12,13 +20,29 @@ prepare_gbpp(point_pattern, covariates = list(), nd = 1000L)
 \item{covariates}{A named list of \code{im} covariates whose spatial windows
 cover the observation window of \code{point_pattern}.}
 
-\item{nd}{Number of dummy quadrature points along each coordinate axis, as used by
+\item{nd}{Number of dummy quadrature points along each coordinate axis. Default is \code{1000L}.}
+
+\item{quadrature_method}{Quadrature construction method: \code{"berman_turner"}
+(default, uses \code{\link[spatstat.geom:quadscheme]{spatstat.geom::quadscheme()}} with counting weights for Poisson likelihood)
+or \code{"logistic"} (uses \code{\link[spatstat.geom:quadscheme.logi]{spatstat.geom::quadscheme.logi()}} for logistic likelihood).}
+
+\item{dummytype}{Dummy point generation type for logistic quadrature: \code{"grid"} (default)
+or \code{"poisson"} (random dummy points according to a Poisson process).}
+
+\item{objective}{Optional objective name (e.g. \code{"poisson"} or \code{"logistic"}). If supplied
+and \code{quadrature_method} is omitted, automatically aligns the quadrature scheme:
+\code{"logistic"} for logistic objectives and \code{"berman_turner"} for Poisson objectives.}
+
+\item{...}{Additional arguments passed to \code{\link[spatstat.geom:quadscheme]{spatstat.geom::quadscheme()}} or
 \code{\link[spatstat.geom:quadscheme.logi]{spatstat.geom::quadscheme.logi()}}.}
 }
 \value{
 A \code{gbpp_data} object with \code{type = "planar"}.
 }
 \description{
-Construct Berman-Turner quadrature data for a planar point process and
-evaluate spatial covariates at the quadrature locations.
+Construct quadrature data for a planar point process and
+evaluate spatial covariates at the quadrature locations. Supports both
+classical Berman-Turner quadrature (with cell counting weights for Poisson
+objectives) and logistic quadrature schemes (with dummy-process intensity
+for logistic objectives).
 }
