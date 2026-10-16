@@ -219,16 +219,10 @@ def make_iterative_poisson_objective(
 
         lam = np.exp(phi)
 
-        denominator = (
-            1.0
-            + lam * interaction_integral
+        denominator = np.maximum(
+            1e-4,
+            1.0 + lam * interaction_integral
         )
-
-        if np.any(denominator <= 0.0):
-            raise ValueError(
-                "Iterative Poisson weight is undefined because "
-                "1 + lambda * interaction_integral <= 0."
-            )
 
         weight = 1.0 / denominator
         weight = weight / np.mean(weight)
@@ -297,17 +291,11 @@ def make_iterative_logistic_objective(
 
         denominator = (
             dummy_intensity
-            * (
-                1.0
-                + lam * interaction_integral
+            * np.maximum(
+                1e-4,
+                1.0 + lam * interaction_integral
             )
         )
-
-        if np.any(denominator <= 0.0):
-            raise ValueError(
-                "Iterative Logistic weight is undefined because "
-                "the weight denominator is not positive."
-            )
 
         weight = (
             lam + dummy_intensity

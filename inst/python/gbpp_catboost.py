@@ -505,12 +505,7 @@ class IterativePoissonObjective(_BatchObjective):
         catboost_weights = _get_weights(weights, n)
 
         lams = np.array([_safe_exp(approxes[i]) for i in range(n)])
-        denominators = 1.0 + lams * interaction_integral
-        if np.any(denominators <= 0.0):
-            raise ValueError(
-                "Iterative Poisson weight denominator "
-                "must be positive."
-            )
+        denominators = np.maximum(1e-4, 1.0 + lams * interaction_integral)
         weights = 1.0 / denominators
         weights = weights / np.mean(weights)
 
@@ -622,12 +617,7 @@ class IterativeLogisticObjective(_BatchObjective):
         catboost_weights = _get_weights(weights, n)
 
         lams = np.array([math.exp(min(max(approxes[i], _CLIP_MIN), _CLIP_MAX)) for i in range(n)])
-        denominators = 1.0 + lams * interaction_integral
-        if np.any(denominators <= 0.0):
-            raise ValueError(
-                "Iterative Logistic weight denominator "
-                "must be positive."
-            )
+        denominators = np.maximum(1e-4, 1.0 + lams * interaction_integral)
         weights = (lams + dummy_intensity) / (dummy_intensity * denominators)
         weights = weights / np.mean(weights)
 

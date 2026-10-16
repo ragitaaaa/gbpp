@@ -280,16 +280,10 @@ def make_iterative_poisson_objective(
 
         lam = np.exp(phi)
 
-        denominator = (
-            1.0
-            + lam * interaction_integral
+        denominator = np.maximum(
+            1e-4,
+            1.0 + lam * interaction_integral
         )
-
-        if np.any(denominator <= 0.0):
-            raise ValueError(
-                "Iterative Poisson weight denominator "
-                "must be positive."
-            )
 
         weight = 1.0 / denominator
         weight = weight / np.mean(weight)
@@ -363,16 +357,10 @@ def make_iterative_logistic_objective(
 
         lam = np.exp(phi)
 
-        denominator = (
-            1.0
-            + lam * interaction_integral
+        denominator = np.maximum(
+            1e-4,
+            1.0 + lam * interaction_integral
         )
-
-        if np.any(denominator <= 0.0):
-            raise ValueError(
-                "Iterative Logistic weight denominator "
-                "must be positive."
-            )
 
         weight = (
             (lam + dummy_intensity)
