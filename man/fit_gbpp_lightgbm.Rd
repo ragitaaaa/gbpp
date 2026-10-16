@@ -9,6 +9,7 @@ fit_gbpp_lightgbm(
   params = list(),
   num_boost_round = 100L,
   nrounds = num_boost_round,
+  objective = "poisson",
   ...
 )
 }
@@ -21,6 +22,10 @@ or \code{\link[=prepare_gbpp_network]{prepare_gbpp_network()}}.}
 \item{num_boost_round}{Number of boosting rounds.}
 
 \item{nrounds}{Alias for \code{num_boost_round}.}
+
+\item{objective}{Point process objective function: \code{"poisson"},
+\code{"weighted_poisson"}, \code{"logistic"}, \code{"weighted_logistic"},
+\code{"iterative_poisson"}, or \code{"iterative_logistic"}.}
 
 \item{...}{Additional arguments passed to the backend fit call.}
 }

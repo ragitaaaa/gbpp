@@ -161,7 +161,7 @@ make_catboost_iterative_logistic_objective <- function(dummy_intensity, interact
   }
 
   if (is.null(baseline)) {
-    if (objective %in% c("poisson", "weighted_poisson")) {
+    if (objective %in% c("poisson", "weighted_poisson", "iterative_poisson")) {
       lambda0 <- sum(data$y) / sum(data$quadrature_weight)
       if (lambda0 <= 0 || !is.finite(lambda0)) {
         stop("Initial Poisson intensity must be positive and finite.", call. = FALSE)

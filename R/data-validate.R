@@ -35,10 +35,12 @@ validate_gbpp_data <- function(data, objective = NULL) {
     )
   }
 
-  n_locations <- if (inherits(data$locations, "ppp")) {
+  n_locations <- if (inherits(data$locations, c("ppp", "lpp"))) {
     spatstat.geom::npoints(data$locations)
-  } else {
+  } else if (is.data.frame(data$locations) || is.matrix(data$locations)) {
     nrow(data$locations)
+  } else {
+    length(data$locations)
   }
 
   if (n_locations != nrow(data$X)) {

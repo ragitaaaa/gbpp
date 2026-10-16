@@ -9,6 +9,7 @@ fit_gbpp_xgboost(
   params = list(),
   nrounds = 100,
   num_boost_round = nrounds,
+  objective = "poisson",
   ...
 )
 }
@@ -21,6 +22,10 @@ or \code{\link[=prepare_gbpp_network]{prepare_gbpp_network()}}.}
 \item{nrounds}{Number of boosting rounds.}
 
 \item{num_boost_round}{Alias for \code{nrounds}.}
+
+\item{objective}{Point process objective function: \code{"poisson"},
+\code{"weighted_poisson"}, \code{"logistic"}, \code{"weighted_logistic"},
+\code{"iterative_poisson"}, or \code{"iterative_logistic"}.}
 
 \item{...}{Additional arguments passed to the backend fit call.}
 }

@@ -49,7 +49,14 @@
   if (length(feature_names) > 0) {
     for (f in feature_names) {
       if (f %in% c("x", "y")) next
-      df[[f]] <- as.numeric(covariates[[f]][list(x = df$x, y = df$y)])
+      v_extracted <- covariates[[f]][list(x = df$x, y = df$y)]
+      if (inherits(object, "gbpp_catboost") && (is.factor(v_extracted) || is.character(v_extracted))) {
+        df[[f]] <- as.character(v_extracted)
+      } else if (is.factor(v_extracted) || is.character(v_extracted)) {
+        df[[f]] <- as.numeric(as.factor(v_extracted))
+      } else {
+        df[[f]] <- as.numeric(v_extracted)
+      }
     }
   }
 
