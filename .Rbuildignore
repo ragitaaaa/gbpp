@@ -10,6 +10,7 @@ catboost_info(/|$)
 ^docs(/|$)
 ^references(/|$)
 ^paper(/|$)
+^paper_latex(/|$)
 ^\.quarto(/|$)
 ^cran-comments\.md$
 ^\.github(/|$)
