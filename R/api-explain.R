@@ -68,3 +68,96 @@ explain_gbpp <- function(
   res
 }
 
+#' Print TreeSHAP Explanation Summary
+#'
+#' @param x A `gbpp_explanation` object.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @return Invisibly returns `x`.
+#' @export
+print.gbpp_explanation <- function(x, ...) {
+  cat("TreeSHAP Model Explanation\n")
+  cat("--------------------------\n")
+  cat("Evaluation samples :", nrow(x$shap), "\n")
+  cat("Number of features :", ncol(x$shap), "\n")
+  cat("Baseline bias      :", round(mean(x$bias), 4), "\n")
+  cat("\nMean absolute SHAP values (Feature Importance):\n")
+  mean_abs <- colMeans(abs(x$shap))
+  mean_abs <- sort(mean_abs, decreasing = TRUE)
+  for (i in seq_along(mean_abs)) {
+    cat(sprintf("  %-16s: %.4f\n", names(mean_abs)[i], mean_abs[i]))
+  }
+  invisible(x)
+}
+
+#' Plot TreeSHAP Explanations
+#'
+#' Visualizes feature importance barplots or partial dependence scatter plots
+#' derived from TreeSHAP values.
+#'
+#' @param x A `gbpp_explanation` object.
+#' @param type Type of plot: `"importance"` for global mean absolute SHAP barplot, or
+#'   `"dependence"` for feature dependence curve. Default is `"importance"`.
+#' @param feature Name of feature to plot when `type = "dependence"`. Defaults to the most important feature.
+#' @param ... Additional arguments passed to base plotting functions.
+#'
+#' @return Invisibly returns `x`.
+#' @export
+plot.gbpp_explanation <- function(x, type = c("importance", "dependence"), feature = NULL, ...) {
+  type <- match.arg(type)
+
+  if (type == "importance") {
+    imp <- colMeans(abs(x$shap))
+    imp <- sort(imp, decreasing = FALSE)
+    graphics::barplot(
+      imp,
+      horiz = TRUE,
+      las = 1,
+      col = "steelblue",
+      border = NA,
+      xlab = "Mean |SHAP value|",
+      main = "Feature Importance (TreeSHAP)",
+      ...
+    )
+  } else if (type == "dependence") {
+    if (is.null(feature)) {
+      imp <- colMeans(abs(x$shap))
+      feature <- names(sort(imp, decreasing = TRUE))[1]
+    }
+    if (!feature %in% colnames(x$shap)) {
+      stop(sprintf("Feature '%s' not found in explanation data.", feature), call. = FALSE)
+    }
+
+    feat_x <- x$data[[feature]]
+    shap_y <- x$shap[, feature]
+
+    if (is.factor(feat_x) || is.character(feat_x)) {
+      graphics::boxplot(
+        shap_y ~ feat_x,
+        xlab = feature,
+        ylab = paste("SHAP value for", feature),
+        col = "lightblue",
+        main = paste("TreeSHAP Dependence:", feature),
+        ...
+      )
+    } else {
+      graphics::plot(
+        feat_x,
+        shap_y,
+        xlab = feature,
+        ylab = paste("SHAP value for", feature),
+        pch = 16,
+        col = grDevices::rgb(0.2, 0.4, 0.8, 0.4),
+        main = paste("TreeSHAP Dependence:", feature),
+        ...
+      )
+      if (length(unique(feat_x)) > 5) {
+        fit_smooth <- stats::lowess(feat_x, shap_y)
+        graphics::lines(fit_smooth, col = "red", lwd = 2)
+      }
+    }
+  }
+
+  invisible(x)
+}
+

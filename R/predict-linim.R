@@ -15,12 +15,14 @@
   if (inherits(newdata, "linnet")) {
     network <- newdata
     covariates <- list()
-  } else if (is.list(newdata) && length(newdata) > 0 && all(vapply(newdata, inherits, logical(1), "linim"))) {
-    # Extract the network from the first linim
+  } else if (is.list(newdata) && length(newdata) > 0 && all(vapply(newdata, function(x) inherits(x, c("linim", "linfun")), logical(1)))) {
+    # Extract the network from the first linim or linfun
     network <- spatstat.linnet::as.linnet(newdata[[1]])
-    covariates <- newdata
+    covariates <- lapply(newdata, function(x) {
+      if (inherits(x, "linfun")) spatstat.linnet::as.linim(x) else x
+    })
   } else {
-    stop("`newdata` for type = 'linim' must be a list of `linim` objects or a `linnet` object.", call. = FALSE)
+    stop("`newdata` for type = 'linim' must be a list of `linim` objects, `linfun` objects, or a `linnet` object.", call. = FALSE)
   }
 
   feature_names <- attr(object, "feature_names")

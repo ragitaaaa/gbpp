@@ -151,3 +151,37 @@ install_gbpp_python <- function(
   message("GBPP Python dependencies installed successfully!")
   invisible(TRUE)
 }
+
+#' Check GBPP Python Environment and Engine Status
+#'
+#' Verifies that Python is properly configured and inspects the availability
+#' and versions of required packages (`lightgbm`, `catboost`, `xgboost`, `numpy`, `scipy`).
+#'
+#' @return Invisibly returns a named logical vector of package availability.
+#' @export
+check_gbpp_python <- function() {
+  cat("GBPP Python Environment Diagnostic\n")
+  cat("------------------------------------\n")
+  configure_gbpp_python()
+  py_config <- reticulate::py_config()
+  cat("Python executable :", py_config$python, "\n")
+  cat("Python version    :", as.character(py_config$version), "\n")
+
+  pkgs <- c("numpy", "scipy", "lightgbm", "catboost", "xgboost")
+  status <- logical(length(pkgs))
+  names(status) <- pkgs
+
+  cat("\nRequired Boosting Packages:\n")
+  for (pkg in pkgs) {
+    avail <- reticulate::py_module_available(pkg)
+    status[pkg] <- avail
+    if (avail) {
+      mod <- tryCatch(reticulate::import(pkg), error = function(e) NULL)
+      ver <- if (!is.null(mod) && !is.null(mod$`__version__`)) mod$`__version__` else "available"
+      cat(sprintf("  %-10s : [OK] version %s\n", pkg, ver))
+    } else {
+      cat(sprintf("  %-10s : [NOT FOUND]\n", pkg))
+    }
+  }
+  invisible(status)
+}

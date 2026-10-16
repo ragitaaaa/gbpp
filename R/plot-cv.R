@@ -67,3 +67,19 @@ plot.gbpp_cv <- function(x, separate = TRUE, ...) {
 
   invisible(x)
 }
+
+#' Print Stochastic Thinning Cross-Validation Summary
+#'
+#' @param x An object of class `gbpp_cv`.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @return Invisibly returns `x`.
+#' @export
+print.gbpp_cv <- function(x, ...) {
+  cat("Stochastic Thinning Cross-Validation Results\n")
+  cat("--------------------------------------------\n")
+  cat("Number of folds :", length(x$folds), "\n")
+  cat("Deviance        :", sprintf("%.4f +/- %.4f\n", x$metrics$deviance_mean, x$metrics$deviance_sd))
+  cat("Log-likelihood  :", sprintf("%.4f +/- %.4f\n", x$metrics$loglik_mean, x$metrics$loglik_sd))
+  invisible(x)
+}
