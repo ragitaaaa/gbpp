@@ -15,3 +15,5 @@ catboost_info(/|$)
 ^\.github(/|$)
 __pycache__(/|$)
 \.pyc$
+^.*\.tar\.gz$
+^\.Rhistory$
