@@ -10,6 +10,8 @@ cv_gbpp(
   params,
   nrounds,
   folds = 5L,
+  objective = c("poisson", "weighted_poisson", "logistic", "weighted_logistic",
+    "iterative_poisson", "iterative_logistic"),
   ...
 )
 }
@@ -24,6 +26,10 @@ cv_gbpp(
 \item{nrounds}{Number of boosting iterations.}
 
 \item{folds}{Number of independent thinning folds (K).}
+
+\item{objective}{Point process objective function: \code{"poisson"},
+\code{"weighted_poisson"}, \code{"logistic"}, \code{"weighted_logistic"},
+\code{"iterative_poisson"}, or \code{"iterative_logistic"}. Default is \code{"poisson"}.}
 
 \item{...}{Additional arguments passed to the engine fitting function.}
 }

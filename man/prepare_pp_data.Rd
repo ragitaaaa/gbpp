@@ -7,7 +7,8 @@
 prepare_pp_data(
   Q,
   X,
-  objective = c("poisson", "weighted_poisson", "logistic", "weighted_logistic"),
+  objective = c("poisson", "weighted_poisson", "logistic", "weighted_logistic",
+    "iterative_poisson", "iterative_logistic"),
   type = c("planar", "network"),
   statistical_weight = NULL
 )

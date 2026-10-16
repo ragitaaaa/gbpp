@@ -12,6 +12,9 @@
 #' @param params List of engine-specific hyperparameters.
 #' @param nrounds Number of boosting iterations.
 #' @param folds Number of independent thinning folds (K).
+#' @param objective Point process objective function: `"poisson"`,
+#'   `"weighted_poisson"`, `"logistic"`, `"weighted_logistic"`,
+#'   `"iterative_poisson"`, or `"iterative_logistic"`. Default is `"poisson"`.
 #' @param ... Additional arguments passed to the engine fitting function.
 #'
 #' @return An object of class `gbpp_cv` containing `metrics` and `folds`.
@@ -22,6 +25,14 @@ cv_gbpp <- function(
   params,
   nrounds,
   folds = 5L,
+  objective = c(
+    "poisson",
+    "weighted_poisson",
+    "logistic",
+    "weighted_logistic",
+    "iterative_poisson",
+    "iterative_logistic"
+  ),
   ...
 ) {
   if (!inherits(data, "gbpp_data")) {
@@ -29,6 +40,7 @@ cv_gbpp <- function(
   }
 
   engine <- match.arg(engine)
+  objective <- match.arg(objective)
   folds <- as.integer(folds)
 
   if (folds < 2L) {
@@ -41,8 +53,6 @@ cv_gbpp <- function(
   # Randomly assign events to K folds
   set.seed(42) # For reproducibility
   fold_ids <- sample(rep_len(seq_len(folds), length(idx_events)))
-
-  fit_fn <- match.fun(paste0("fit_gbpp_", engine))
 
   res_folds <- vector("list", folds)
   ll_res <- numeric(folds)
@@ -84,7 +94,14 @@ cv_gbpp <- function(
     )
 
     # Train model on the (K-1)/K sub-process
-    model <- fit_fn(data_train, params = params, nrounds = nrounds, ...)
+    model <- fit_gbpp(
+      data = data_train,
+      engine = engine,
+      objective = objective,
+      params = params,
+      n_trees = nrounds,
+      ...
+    )
 
     # Adjust the learned baseline to predict the original full intensity
     p_train <- (folds - 1) / folds

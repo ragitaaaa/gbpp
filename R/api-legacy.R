@@ -13,11 +13,11 @@
 #' @param num_boost_round Alias for `nrounds`.
 #' @return A fitted model of class `gbpp_xgboost`.
 #' @export
-fit_gbpp_xgboost <- function(data, params = list(), nrounds = 100, num_boost_round = nrounds, ...) {
+fit_gbpp_xgboost <- function(data, params = list(), nrounds = 100, num_boost_round = nrounds, objective = "poisson", ...) {
   fit_gbpp(
     data = data,
     engine = "xgboost",
-    objective = "poisson",
+    objective = objective,
     n_trees = num_boost_round,
     params = params,
     ...
@@ -110,11 +110,11 @@ fit_gbpp_xgboost_iterative_logistic <- function(data, params = list(), nrounds =
 #' @param nrounds Alias for `num_boost_round`.
 #' @return A fitted model of class `gbpp_lightgbm`.
 #' @export
-fit_gbpp_lightgbm <- function(data, params = list(), num_boost_round = 100L, nrounds = num_boost_round, ...) {
+fit_gbpp_lightgbm <- function(data, params = list(), num_boost_round = 100L, nrounds = num_boost_round, objective = "poisson", ...) {
   fit_gbpp(
     data = data,
     engine = "lightgbm",
-    objective = "poisson",
+    objective = objective,
     n_trees = num_boost_round,
     params = params,
     ...
@@ -207,11 +207,11 @@ fit_gbpp_lightgbm_iterative_logistic <- function(data, params = list(), num_boos
 #' @param num_boost_round Alias for `nrounds`.
 #' @return A fitted model of class `gbpp_catboost`.
 #' @export
-fit_gbpp_catboost <- function(data, params = list(), nrounds = 100L, num_boost_round = nrounds, ...) {
+fit_gbpp_catboost <- function(data, params = list(), nrounds = 100L, num_boost_round = nrounds, objective = "poisson", ...) {
   fit_gbpp(
     data = data,
     engine = "catboost",
-    objective = "poisson",
+    objective = objective,
     n_trees = num_boost_round,
     params = params,
     ...
