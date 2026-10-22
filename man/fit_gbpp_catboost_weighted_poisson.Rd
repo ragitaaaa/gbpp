@@ -14,7 +14,8 @@ fit_gbpp_catboost_weighted_poisson(
 }
 \arguments{
 \item{data}{An object of class \code{gbpp_data} constructed via \code{\link[=prepare_gbpp]{prepare_gbpp()}}
-or \code{\link[=prepare_gbpp_network]{prepare_gbpp_network()}}.}
+or \code{\link[=prepare_gbpp_network]{prepare_gbpp_network()}}. Supports continuous numeric features as well as
+factor or character categorical covariates across all three engines.}
 
 \item{params}{Named list of backend-specific parameters to override or supplement defaults.}
 

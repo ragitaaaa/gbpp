@@ -18,3 +18,7 @@ __pycache__(/|$)
 \.pyc$
 ^.*\.tar\.gz$
 ^\.Rhistory$
+^\.Rproj\.user$
+^simulation_.*$
+^.*\.docx$
+^.*\.xlsx$

@@ -6,9 +6,10 @@
 #' objectives) and logistic quadrature schemes (with dummy-process intensity
 #' for logistic objectives).
 #'
-#' @param point_pattern An `ppp` object containing the observed points.
+#' @param point_pattern A `ppp` object containing the observed points.
 #' @param covariates A named list of `im` covariates whose spatial windows
-#'   cover the observation window of `point_pattern`.
+#'   cover the observation window of `point_pattern`. Numeric and factor/categorical
+#'   covariates are supported.
 #' @param nd Number of dummy quadrature points along each coordinate axis. Default is `1000L`.
 #' @param quadrature_method Quadrature construction method: `"berman_turner"`
 #'   (default, uses [spatstat.geom::quadscheme()] with counting weights for Poisson likelihood)

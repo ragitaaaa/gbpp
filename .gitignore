@@ -35,3 +35,6 @@ docs/
 references/
 paper/
 paper_latex/
+simulation_*
+*.docx
+*.xlsx

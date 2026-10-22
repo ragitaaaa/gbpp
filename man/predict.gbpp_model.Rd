@@ -14,21 +14,32 @@
 \arguments{
 \item{object}{A fitted model of class \code{gbpp_model}.}
 
-\item{newdata}{A numeric matrix or data frame containing predictor covariates.}
+\item{newdata}{Predictor covariates. Can be:
+\itemize{
+\item A \code{data.frame} or numeric \code{matrix} of covariate values evaluated at specific locations (for \code{type} in \code{"link"}, \code{"intensity"}, \code{"raw"}).
+\item A named list of \code{spatstat.geom::im} objects (or an \code{owin} window) for 2D continuous planar evaluation (for \code{type = "im"}).
+\item A named list of \code{spatstat.linnet::linim} or \code{linfun} objects (or a \code{linnet} network) for linear network evaluation (for \code{type = "linim"}).
+}}
 
 \item{type}{Type of prediction:
 \itemize{
 \item \code{"link"} (default): The complete linear predictor \eqn{\hat{\eta}(u) = \eta_0 + \sum f_m(z(u))}.
 \item \code{"intensity"}: The spatial intensity \eqn{\hat{\lambda}(u) = \exp(\hat{\eta}(u))}.
 \item \code{"raw"}: The raw ensemble contribution \eqn{\sum f_m(z(u))} without baseline offset.
+\item \code{"im"}: A continuous 2D pixel image (\code{spatstat.geom::im}) of spatial intensity across a planar window.
+\item \code{"linim"}: A continuous linear network pixel image (\code{spatstat.linnet::linim}) of spatial intensity across a network.
 }}
 
-\item{...}{Additional arguments passed to the underlying engine prediction method.}
+\item{...}{Additional arguments passed to the underlying engine prediction method
+(e.g., \code{eps} or \code{dimyx} when \code{type = "im"} or \code{type = "linim"}).}
 }
 \value{
-A numeric vector of predictions.
+A numeric vector of predictions (for \code{type} in \code{"link"}, \code{"intensity"}, \code{"raw"}),
+an object of class \code{spatstat.geom::im} (for \code{type = "im"}), or an object of class
+\code{spatstat.linnet::linim} (for \code{type = "linim"}).
 }
 \description{
 Evaluates the fitted gradient boosted point process model on new covariate data,
-returning the estimated log-intensity (link), spatial intensity, or raw boosting tree margin.
+returning the estimated log-intensity (link), spatial intensity, raw boosting tree margin,
+or continuous spatial pixel images on planar or linear network domains.
 }

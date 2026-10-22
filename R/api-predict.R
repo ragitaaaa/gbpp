@@ -5,17 +5,26 @@
 #' Predict from a Fitted GBPP Model
 #'
 #' Evaluates the fitted gradient boosted point process model on new covariate data,
-#' returning the estimated log-intensity (link), spatial intensity, or raw boosting tree margin.
+#' returning the estimated log-intensity (link), spatial intensity, raw boosting tree margin,
+#' or continuous spatial pixel images on planar or linear network domains.
 #'
 #' @param object A fitted model of class `gbpp_model`.
-#' @param newdata A numeric matrix or data frame containing predictor covariates.
+#' @param newdata Predictor covariates. Can be:
+#'   - A `data.frame` or numeric `matrix` of covariate values evaluated at specific locations (for `type` in `"link"`, `"intensity"`, `"raw"`).
+#'   - A named list of `spatstat.geom::im` objects (or an `owin` window) for 2D continuous planar evaluation (for `type = "im"`).
+#'   - A named list of `spatstat.linnet::linim` or `linfun` objects (or a `linnet` network) for linear network evaluation (for `type = "linim"`).
 #' @param type Type of prediction:
 #'   - `"link"` (default): The complete linear predictor \eqn{\hat{\eta}(u) = \eta_0 + \sum f_m(z(u))}.
 #'   - `"intensity"`: The spatial intensity \eqn{\hat{\lambda}(u) = \exp(\hat{\eta}(u))}.
 #'   - `"raw"`: The raw ensemble contribution \eqn{\sum f_m(z(u))} without baseline offset.
-#' @param ... Additional arguments passed to the underlying engine prediction method.
+#'   - `"im"`: A continuous 2D pixel image (`spatstat.geom::im`) of spatial intensity across a planar window.
+#'   - `"linim"`: A continuous linear network pixel image (`spatstat.linnet::linim`) of spatial intensity across a network.
+#' @param ... Additional arguments passed to the underlying engine prediction method
+#'   (e.g., `eps` or `dimyx` when `type = "im"` or `type = "linim"`).
 #'
-#' @return A numeric vector of predictions.
+#' @return A numeric vector of predictions (for `type` in `"link"`, `"intensity"`, `"raw"`),
+#'   an object of class `spatstat.geom::im` (for `type = "im"`), or an object of class
+#'   `spatstat.linnet::linim` (for `type = "linim"`).
 #' @export
 predict.gbpp_model <- function(
     object,
@@ -71,8 +80,12 @@ predict.gbpp_model <- function(
     xgboost = {
       if (!reticulate::py_available(initialize = TRUE)) stop("Python not available")
       if (is.data.frame(newdata)) {
-        if (!all(vapply(newdata, is.numeric, logical(1)))) {
-          stop("`newdata` for XGBoost must contain only numeric columns.", call. = FALSE)
+        for (col in names(newdata)) {
+          v <- newdata[[col]]
+          if (is.data.frame(v)) v <- v[[1]]
+          if (is.factor(v) || is.character(v)) {
+            newdata[[col]] <- as.numeric(as.factor(v))
+          }
         }
         feature_names <- colnames(newdata)
         mat <- as.matrix(newdata)
@@ -99,8 +112,12 @@ predict.gbpp_model <- function(
     lightgbm = {
       if (!reticulate::py_available(initialize = TRUE)) stop("Python not available")
       if (is.data.frame(newdata)) {
-        if (!all(vapply(newdata, is.numeric, logical(1)))) {
-          stop("`newdata` for LightGBM must contain only numeric columns.", call. = FALSE)
+        for (col in names(newdata)) {
+          v <- newdata[[col]]
+          if (is.data.frame(v)) v <- v[[1]]
+          if (is.factor(v) || is.character(v)) {
+            newdata[[col]] <- as.numeric(as.factor(v))
+          }
         }
         mat <- as.matrix(newdata)
       } else {

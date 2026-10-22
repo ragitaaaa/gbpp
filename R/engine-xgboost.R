@@ -2,6 +2,10 @@
 # GBPP - XGBoost Backend Engine
 # ============================================================
 
+#' Import the XGBoost Python module for GBPP
+#'
+#' @keywords internal
+#' @noRd
 .gbpp_xgboost_module <- function() {
   configure_gbpp_python()
   python_path <- gbpp_python_path()
@@ -12,8 +16,22 @@
   )
 }
 
+#' Construct an XGBoost DMatrix for GBPP
+#'
+#' @keywords internal
+#' @noRd
 .gbpp_xgboost_dmatrix <- function(X, y = NULL, base_margin = NULL) {
   xgb <- reticulate::import("xgboost", delay_load = FALSE)
+
+  if (is.data.frame(X)) {
+    for (col in names(X)) {
+      v <- X[[col]]
+      if (is.data.frame(v)) v <- v[[1]]
+      if (is.factor(v) || is.character(v)) {
+        X[[col]] <- as.numeric(as.factor(v))
+      }
+    }
+  }
 
   X_matrix <- as.matrix(X)
   feature_names <- colnames(X_matrix)
@@ -99,6 +117,10 @@ make_xgboost_iterative_logistic_objective <- function(dummy_intensity, interacti
 # Internal Engine Fitting Function
 # ============================================================
 
+#' Internal XGBoost engine fitting function
+#'
+#' @keywords internal
+#' @noRd
 .gbpp_fit_xgboost <- function(
     data,
     objective,

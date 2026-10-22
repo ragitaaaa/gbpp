@@ -107,6 +107,10 @@ make_catboost_iterative_logistic_objective <- function(dummy_intensity, interact
 # Internal Engine Fitting Function
 # ============================================================
 
+#' Internal CatBoost engine fitting function
+#'
+#' @keywords internal
+#' @noRd
 .gbpp_fit_catboost <- function(
     data,
     objective,

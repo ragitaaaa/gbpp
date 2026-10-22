@@ -23,7 +23,8 @@ fit_gbpp(
 }
 \arguments{
 \item{data}{An object of class \code{gbpp_data} constructed via \code{\link[=prepare_gbpp]{prepare_gbpp()}}
-or \code{\link[=prepare_gbpp_network]{prepare_gbpp_network()}}.}
+or \code{\link[=prepare_gbpp_network]{prepare_gbpp_network()}}. Supports continuous numeric features as well as
+factor or character categorical covariates across all three engines.}
 
 \item{engine}{Boosting backend engine: \code{"xgboost"}, \code{"lightgbm"}, or \code{"catboost"}.}
 
@@ -53,7 +54,8 @@ If \code{NULL}, it is automatically initialized to \eqn{\log(\sum y / \sum v)} f
 \item{...}{Additional arguments passed to the backend fit call.}
 }
 \value{
-An object of class \code{c(paste0("gbpp_", engine), "gbpp_model")}.
+A fitted model of class \code{gbpp_model} (with subclass \code{gbpp_xgboost},
+\code{gbpp_lightgbm}, or \code{gbpp_catboost}).
 }
 \description{
 Fits a gradient boosting model to spatial point process data on planar

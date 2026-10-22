@@ -5,7 +5,8 @@
 #' modern gradient boosting backends (XGBoost, LightGBM, CatBoost).
 #'
 #' @param data An object of class `gbpp_data` constructed via [prepare_gbpp()]
-#'   or [prepare_gbpp_network()].
+#'   or [prepare_gbpp_network()]. Supports continuous numeric features as well as
+#'   factor or character categorical covariates across all three engines.
 #' @param engine Boosting backend engine: `"xgboost"`, `"lightgbm"`, or `"catboost"`.
 #' @param objective Point process objective function: `"poisson"`,
 #'   `"weighted_poisson"`, `"logistic"`, `"weighted_logistic"`,
@@ -22,7 +23,8 @@
 #' @param params Named list of backend-specific parameters to override or supplement defaults.
 #' @param ... Additional arguments passed to the backend fit call.
 #'
-#' @return An object of class `c(paste0("gbpp_", engine), "gbpp_model")`.
+#' @return A fitted model of class `gbpp_model` (with subclass `gbpp_xgboost`,
+#'   `gbpp_lightgbm`, or `gbpp_catboost`).
 #' @export
 fit_gbpp <- function(
     data,

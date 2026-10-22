@@ -15,10 +15,11 @@ prepare_gbpp(
 )
 }
 \arguments{
-\item{point_pattern}{An \code{ppp} object containing the observed points.}
+\item{point_pattern}{A \code{ppp} object containing the observed points.}
 
 \item{covariates}{A named list of \code{im} covariates whose spatial windows
-cover the observation window of \code{point_pattern}.}
+cover the observation window of \code{point_pattern}. Numeric and factor/categorical
+covariates are supported.}
 
 \item{nd}{Number of dummy quadrature points along each coordinate axis. Default is \code{1000L}.}
 

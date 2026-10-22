@@ -9,9 +9,9 @@
 #' @param data A `gbpp_data` object.
 #' @param engine Character string specifying the engine: `"xgboost"`,
 #'   `"lightgbm"`, or `"catboost"`.
-#' @param params List of engine-specific hyperparameters.
-#' @param nrounds Number of boosting iterations.
-#' @param folds Number of independent thinning folds (K).
+#' @param params List of engine-specific hyperparameters. Default is `list()`.
+#' @param nrounds Number of boosting iterations. Default is `100L`.
+#' @param folds Number of independent thinning folds (K). Default is `5L`.
 #' @param objective Point process objective function: `"poisson"`,
 #'   `"weighted_poisson"`, `"logistic"`, `"weighted_logistic"`,
 #'   `"iterative_poisson"`, or `"iterative_logistic"`. Default is `"poisson"`.
@@ -22,8 +22,8 @@
 cv_gbpp <- function(
   data,
   engine = c("xgboost", "lightgbm", "catboost"),
-  params,
-  nrounds,
+  params = list(),
+  nrounds = 100L,
   folds = 5L,
   objective = c(
     "poisson",

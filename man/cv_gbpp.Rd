@@ -7,8 +7,8 @@
 cv_gbpp(
   data,
   engine = c("xgboost", "lightgbm", "catboost"),
-  params,
-  nrounds,
+  params = list(),
+  nrounds = 100L,
   folds = 5L,
   objective = c("poisson", "weighted_poisson", "logistic", "weighted_logistic",
     "iterative_poisson", "iterative_logistic"),
@@ -21,11 +21,11 @@ cv_gbpp(
 \item{engine}{Character string specifying the engine: \code{"xgboost"},
 \code{"lightgbm"}, or \code{"catboost"}.}
 
-\item{params}{List of engine-specific hyperparameters.}
+\item{params}{List of engine-specific hyperparameters. Default is \code{list()}.}
 
-\item{nrounds}{Number of boosting iterations.}
+\item{nrounds}{Number of boosting iterations. Default is \code{100L}.}
 
-\item{folds}{Number of independent thinning folds (K).}
+\item{folds}{Number of independent thinning folds (K). Default is \code{5L}.}
 
 \item{objective}{Point process objective function: \code{"poisson"},
 \code{"weighted_poisson"}, \code{"logistic"}, \code{"weighted_logistic"},

@@ -2,6 +2,10 @@
 # GBPP - LightGBM Backend Engine
 # ============================================================
 
+#' Import the LightGBM Python module for GBPP
+#'
+#' @keywords internal
+#' @noRd
 .gbpp_lightgbm_module <- function() {
   configure_gbpp_python()
   python_path <- gbpp_python_path()
@@ -68,6 +72,10 @@ make_lightgbm_iterative_logistic_objective <- function(dummy_intensity, interact
 # Internal Engine Fitting Function
 # ============================================================
 
+#' Internal LightGBM engine fitting function
+#'
+#' @keywords internal
+#' @noRd
 .gbpp_fit_lightgbm <- function(
     data,
     objective,
@@ -120,8 +128,19 @@ make_lightgbm_iterative_logistic_objective <- function(dummy_intensity, interact
     ds_params$min_data_in_leaf <- as.integer(params$min_data_in_leaf)
   }
 
+  X_data <- data$X
+  if (is.data.frame(X_data)) {
+    for (col in names(X_data)) {
+      v <- X_data[[col]]
+      if (is.data.frame(v)) v <- v[[1]]
+      if (is.factor(v) || is.character(v)) {
+        X_data[[col]] <- as.numeric(as.factor(v))
+      }
+    }
+  }
+
   dtrain <- lgb$Dataset(
-    data = as.matrix(data$X),
+    data = as.matrix(X_data),
     label = data$y,
     feature_name = if (!is.null(feature_names)) reticulate::r_to_py(as.list(feature_names)) else "auto",
     init_score = init_score,
