@@ -201,7 +201,18 @@ make_lightgbm_iterative_logistic_objective <- function(dummy_intensity, interact
     newdata <- newdata[, attr(object, "feature_names"), drop = FALSE]
   }
 
-  shap_vals <- object$predict(as.matrix(newdata), pred_contrib = TRUE)
+  X_data <- newdata
+  if (is.data.frame(X_data)) {
+    for (col in names(X_data)) {
+      v <- X_data[[col]]
+      if (is.data.frame(v)) v <- v[[1]]
+      if (is.factor(v) || is.character(v)) {
+        X_data[[col]] <- as.numeric(as.factor(v))
+      }
+    }
+  }
+
+  shap_vals <- object$predict(as.matrix(X_data), pred_contrib = TRUE)
   
   colnames(shap_vals) <- c(attr(object, "feature_names"), "bias")
   

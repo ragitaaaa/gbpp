@@ -56,17 +56,24 @@
       )
       for (f in feature_names) {
         if (f %in% c("x", "y")) next
-        vals <- tryCatch(as.numeric(covariates[[f]][p_lpp]), error = function(e) numeric(0))
-        if (length(vals) != n_pts || anyNA(vals)) {
-          fill_val <- as.numeric(mean(as.numeric(covariates[[f]]$v), na.rm = TRUE))
-          if (is.na(fill_val)) fill_val <- 0.0
-          if (length(vals) != n_pts) {
-            vals <- rep(fill_val, n_pts)
-          } else {
-            vals[is.na(vals)] <- fill_val
-          }
+        v_raw <- tryCatch(covariates[[f]][p_lpp], error = function(e) NULL)
+        is_cat <- is.factor(v_raw) || is.character(v_raw) || is.factor(covariates[[f]]$v) || is.character(covariates[[f]]$v)
+        
+        if (is.null(v_raw) || length(v_raw) != n_pts) {
+          fill_val <- if (is_cat) as.character(covariates[[f]]$v[1]) else 0.0
+          v_raw <- rep(fill_val, n_pts)
+        } else if (anyNA(v_raw)) {
+          fill_val <- if (is_cat) as.character(covariates[[f]]$v[1]) else 0.0
+          v_raw[is.na(v_raw)] <- fill_val
         }
-        df[[f]] <- vals
+
+        if (inherits(object, "gbpp_catboost") && is_cat) {
+          df[[f]] <- as.character(v_raw)
+        } else if (is_cat) {
+          df[[f]] <- as.numeric(as.factor(v_raw))
+        } else {
+          df[[f]] <- as.numeric(v_raw)
+        }
       }
     }
     
