@@ -45,55 +45,7 @@ test_that("Poisson derivatives are calculated correctly", {
   )
 })
 
-test_that("Poisson derivatives are calculated correctly", {
-
-  data <- new_gbpp_data(
-    X = data.frame(x1 = 1:3),
-    y = c(1, 0, 0),
-    locations = data.frame(
-      x = 1:3,
-      y = 1:3
-    ),
-    quadrature_weight = c(0.2, 0.3, 0.5)
-  )
-
-  prediction <- c(
-    log(2),
-    log(3),
-    log(4)
-  )
-
-  result <- gbpp_objective(
-    data = data,
-    prediction = prediction,
-    objective = "poisson"
-  )
-
-  expected_gradient <- c(
-    0.2 * 2 - 1,
-    0.3 * 3 - 0,
-    0.5 * 4 - 0
-  )
-
-  expected_hessian <- c(
-    0.2 * 2,
-    0.3 * 3,
-    0.5 * 4
-  )
-
-  expect_equal(
-    result$gradient,
-    expected_gradient
-  )
-
-  expect_equal(
-    result$hessian,
-    expected_hessian
-  )
-})
-
 test_that("Logistic derivatives are calculated correctly", {
-
   data <- new_gbpp_data(
     X = data.frame(x1 = 1:3),
     y = c(1, 0, 1),
