@@ -12,6 +12,9 @@ catboost_info(/|$)
 ^paper(/|$)
 ^paper_latex(/|$)
 ^\.quarto(/|$)
+^\.agents(/|$)
+^rosm\.cache(/|$)
+^test_yaml\.pdf$
 ^cran-comments\.md$
 ^\.github(/|$)
 __pycache__(/|$)

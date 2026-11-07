@@ -28,9 +28,12 @@ scratch/
 
 # Local development and thesis work
 development/
+rosm.cache/
+test_yaml.pdf
 
 # Documentation and agent instructions
 .antigravity/
+.agents/
 docs/
 references/
 paper/
