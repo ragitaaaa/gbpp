@@ -19,9 +19,12 @@ The package supports both two-dimensional planar Euclidean domains ($\mathbb{R}^
   - [Step 3: Verification & Diagnostics](#step-3-verification--diagnostics)
 - [Step-by-Step Usage Guide](#step-by-step-usage-guide)
   - [Workflow 1: 2D Planar Point Processes](#workflow-1-2d-planar-point-processes)
-  - [Workflow 2: 1D Linear Road Networks](#workflow-2-1d-linear-road-networks)
-  - [Workflow 3: Spatial Cross-Validation via Stochastic Thinning](#workflow-3-spatial-cross-validation-via-stochastic-thinning)
-  - [Workflow 4: Model Interpretability (TreeSHAP & Partial Dependence)](#workflow-4-model-interpretability-treeshap--partial-dependence)
+  - [Workflow 2: Evaluating Fit Metrics & Calibration](#workflow-2-evaluating-fit-metrics--calibration)
+  - [Workflow 3: Weighted & Iterative Objectives (Handling Clustered Data)](#workflow-3-weighted--iterative-objectives-handling-clustered-data)
+  - [Workflow 4: 1D Linear Road Networks](#workflow-4-1d-linear-road-networks)
+  - [Workflow 5: Spatial Cross-Validation via Stochastic Thinning](#workflow-5-spatial-cross-validation-via-stochastic-thinning)
+  - [Workflow 6: Model Interpretability (TreeSHAP & Partial Dependence)](#workflow-6-model-interpretability-treeshap--partial-dependence)
+- [How to Update the Package](#how-to-update-the-package)
 - [API Reference Summary](#api-reference-summary)
 - [License](#license)
 
@@ -163,7 +166,114 @@ plot(bei, add = TRUE, pch = ".", col = rgb(0, 0, 0, 0.25))
 
 ---
 
-### Workflow 2: 1D Linear Road Networks
+### Workflow 2: Evaluating Fit Metrics & Calibration
+
+After fitting a point process model, you can evaluate goodness-of-fit metrics (log-likelihood, deviance) and global calibration:
+
+```r
+# 1. Predict intensity at quadrature locations
+pred_intensity <- predict(fit_planar, newdata = planar_data$X, type = "intensity")
+
+# 2. Compute spatial Poisson log-likelihood
+loglik_val <- metric_poisson_loglik(
+  pred_intensity = pred_intensity,
+  y = planar_data$y,
+  w = planar_data$quadrature_weight
+)
+
+# 3. Compute spatial Poisson deviance
+deviance_val <- metric_poisson_deviance(
+  pred_intensity = pred_intensity,
+  y = planar_data$y,
+  w = planar_data$quadrature_weight
+)
+
+# 4. Global calibration check: integral of intensity vs actual event count
+expected_n <- sum(planar_data$quadrature_weight * pred_intensity)
+actual_n <- sum(planar_data$y == 1)
+
+cat(sprintf("Spatial Poisson Log-Likelihood : %.2f\n", loglik_val))
+cat(sprintf("Spatial Poisson Deviance       : %.2f\n", deviance_val))
+cat(sprintf("Expected Abundance (Integral)  : %.1f (Actual: %d, Diff: %+.1f)\n", 
+            expected_n, actual_n, expected_n - actual_n))
+```
+
+---
+
+### Workflow 3: Weighted & Iterative Objectives (Handling Clustered Data)
+
+Standard point process likelihood can overfit when events exhibit spatial clustering (e.g., Cox or Neyman-Scott processes) because point aggregation is conflated with covariate effects. `gbpp` provides two principled weighting frameworks:
+
+#### Option A: Dynamic Iterative Weights (Lu et al., 2025)
+
+Dynamically updates variance-stabilizing Godambe weights at every boosting iteration based on Ripley's $K$-function interaction integral $A = K(r_{\max}) - \pi r_{\max}^2$:
+
+```r
+# 1. Prepare data with Berman-Turner quadrature
+data_iter <- prepare_gbpp(
+  point_pattern = bei,
+  covariates = bei.extra,
+  nd = 128L,
+  quadrature_method = "berman_turner"
+)
+
+# 2. Attach spatial interaction integral (rmax = 20 meters)
+data_iter <- attach_interaction_integral(
+  data = data_iter,
+  point_pattern = bei,
+  rmax = 20
+)
+
+# 3. Fit with iteratively weighted Poisson objective
+fit_iter <- fit_gbpp(
+  data = data_iter,
+  engine = "xgboost",
+  objective = "iterative_poisson",
+  n_trees = 100L,
+  learning_rate = 0.05,
+  max_depth = 4L
+)
+```
+
+#### Option B: Custom / Local LISA Weights (D'Angelo et al., 2024, 2026)
+
+You can supply arbitrary custom weights (e.g., pilot kernel weights from Choiruddin et al. 2026, or local second-order LISA weights from D'Angelo et al. 2024, 2026) via `attach_statistical_weight()`:
+
+```r
+library(spatstat.explore)
+
+# 1. Compute pilot intensity via kernel estimation
+pilot_lam <- density.ppp(bei, sigma = 30)
+
+# 2. Compute Local Inhomogeneous K-function (LISA statistic) for each tree
+lk <- localKinhom(bei, lambda = pilot_lam, rvalue = 20, verbose = FALSE)
+
+# 3. Derive local Godambe weights at tree locations
+A_local <- pmax(0, lk - pi * 20^2)
+lam_trees <- interp.im(pilot_lam, x = bei$x, y = bei$y)
+w_trees <- 1 / (1 + lam_trees * A_local)
+
+# 4. Spatially smooth local weights across the window using Nadaraya-Watson regression
+w_im <- Smooth.ppp(ppp(bei$x, bei$y, window = Window(bei), marks = w_trees), sigma = 30)
+w_quad <- interp.im(w_im, x = data_iter$locations$x, y = data_iter$locations$y)
+w_quad <- w_quad / mean(w_quad)  # Normalize so mean weight = 1
+
+# 5. Attach custom statistical weights and fit with weighted_poisson
+data_local <- attach_statistical_weight(data_iter, w_quad)
+
+fit_local <- fit_gbpp(
+  data = data_local,
+  engine = "xgboost",
+  objective = "weighted_poisson",
+  n_trees = 100L,
+  learning_rate = 0.05,
+  max_depth = 4L
+)
+```
+
+---
+
+### Workflow 4: 1D Linear Road Networks
 
 In network-constrained settings, events occur along street or river segments rather than across open 2D space. `gbpp` supports linear networks via `spatstat.linnet`.
 
@@ -229,7 +339,7 @@ plot(as.ppp(chicago), add = TRUE, pch = 16, cex = 0.4, col = "red")
 
 ---
 
-### Workflow 3: Spatial Cross-Validation via Stochastic Thinning
+### Workflow 5: Spatial Cross-Validation via Stochastic Thinning
 
 Standard cross-validation partitions points at random, which can distort spatial integration weights. `gbpp` implements independent stochastic thinning cross-validation:
 
@@ -259,7 +369,7 @@ plot(cv_results)
 
 ---
 
-### Workflow 4: Model Interpretability (TreeSHAP & Partial Dependence)
+### Workflow 6: Model Interpretability (TreeSHAP & Partial Dependence)
 
 `explain_gbpp()` calculates TreeSHAP feature attributions referenced against the background spatial quadrature scheme.
 
@@ -298,16 +408,40 @@ plot(shap_output, type = "dependence", feature = "grad")
 
 ---
 
+## How to Update the Package
+
+If you or a collaborator already have an earlier version of `gbpp` installed, you can update to the latest version directly from GitHub using `remotes`:
+
+```r
+# Force re-installation of the latest version from GitHub
+if (!requireNamespace("remotes", quietly = TRUE)) {
+  install.packages("remotes")
+}
+remotes::install_github("ragitaaaa/gbpp", force = TRUE, upgrade = "never")
+```
+
+*(Note: If updating in an active R session where `gbpp` or `reticulate` is already loaded, restart R first (`Ctrl+Shift+F10` in RStudio or `.rs.restartR()`) so dynamic libraries can be cleanly overwritten).*
+
+---
+
 ## API Reference Summary
 
 | Function | Primary Purpose | Key Arguments |
 |---|---|---|
 | `install_gbpp_python()` | Automated virtualenv setup | `envname = "r-gbpp"` |
 | `check_gbpp_python()` | Inspect installed Python engine versions | *(None)* |
-| `prepare_gbpp()` | Construct 2D planar quadrature scheme | `point_pattern`, `covariates`, `nd`, `quadrature_method` |
-| `prepare_gbpp_network()` | Construct 1D linear network quadrature | `point_pattern`, `covariates`, `nd` |
+| `prepare_gbpp()` | Construct 2D planar quadrature scheme | `point_pattern`, `covariates`, `nd`, `quadrature_method`, `statistical_weight` |
+| `prepare_gbpp_network()` | Construct 1D linear network quadrature | `point_pattern`, `covariates`, `nd`, `statistical_weight` |
+| `attach_statistical_weight()` | Attach custom or local LISA weights | `data`, `weights` |
+| `attach_interaction_integral()` | Attach Ripley's K interaction integral for iterative objectives | `data`, `point_pattern`, `rmax` |
 | `fit_gbpp()` | Fit gradient boosted point process model | `data`, `engine`, `objective`, `n_trees`, `learning_rate`, `max_depth` |
 | `predict.gbpp_model()` | Predict intensity values or spatial pixel images | `object`, `newdata`, `type = c("intensity", "link", "im", "linim")` |
+| `metric_poisson_loglik()` | Calculate spatial Poisson log-likelihood | `pred_intensity`, `y`, `w`, `p_scale` |
+| `metric_poisson_deviance()` | Calculate spatial Poisson deviance | `pred_intensity`, `y`, `w`, `p_scale` |
+| `cv_gbpp()` | Spatial stochastic thinning cross-validation | `data`, `engine`, `params`, `nrounds`, `folds`, `objective` |
+| `explain_gbpp()` | TreeSHAP feature attributions | `object`, `data`, `background` |
+| `plot.gbpp_explanation()` | Visualize TreeSHAP importance or dependence curves | `x`, `type = c("importance", "dependence")`, `feature` |
+| `plot.gbpp_cv()` | Visualize stochastic thinning validation folds | `x`, `separate` |
 | `cv_gbpp()` | Spatial stochastic thinning cross-validation | `data`, `engine`, `params`, `nrounds`, `folds`, `objective` |
 | `explain_gbpp()` | TreeSHAP feature attributions | `object`, `data`, `background` |
 | `plot.gbpp_explanation()` | Visualize TreeSHAP importance or dependence curves | `x`, `type = c("importance", "dependence")`, `feature` |
