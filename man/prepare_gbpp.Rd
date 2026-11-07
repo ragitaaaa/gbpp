@@ -11,6 +11,8 @@ prepare_gbpp(
   quadrature_method = c("berman_turner", "logistic"),
   dummytype = c("grid", "poisson"),
   objective = NULL,
+  statistical_weight = NULL,
+  interaction_integral = NULL,
   ...
 )
 }
@@ -33,6 +35,13 @@ or \code{"poisson"} (random dummy points according to a Poisson process).}
 \item{objective}{Optional objective name (e.g. \code{"poisson"} or \code{"logistic"}). If supplied
 and \code{quadrature_method} is omitted, automatically aligns the quadrature scheme:
 \code{"logistic"} for logistic objectives and \code{"berman_turner"} for Poisson objectives.}
+
+\item{statistical_weight}{Optional numeric vector of custom statistical weights
+(e.g., from pilot estimation, local LISA statistics, or IPW). Must match the
+total number of quadrature points.}
+
+\item{interaction_integral}{Optional numeric vector or scalar of spatial interaction
+integrals for iteratively weighted objectives.}
 
 \item{...}{Additional arguments passed to \code{\link[spatstat.geom:quadscheme]{spatstat.geom::quadscheme()}} or
 \code{\link[spatstat.geom:quadscheme.logi]{spatstat.geom::quadscheme.logi()}}.}

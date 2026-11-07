@@ -11,12 +11,18 @@
 #' @param nd Number of dummy quadrature points per network segment, as used by
 #'   [spatstat.linnet::linequad()].
 #'
+#' @param statistical_weight Optional numeric vector of custom statistical weights.
+#' @param interaction_integral Optional numeric vector or scalar of spatial interaction
+#'   integrals for iteratively weighted objectives.
+#'
 #' @return A `gbpp_data` object with `type = "network"`.
 #' @export
 prepare_gbpp_network <- function(
     point_pattern,
     covariates = list(),
-    nd = 1000L
+    nd = 1000L,
+    statistical_weight = NULL,
+    interaction_integral = NULL
 ) {
   if (!inherits(point_pattern, "lpp")) {
     stop("`point_pattern` must be an `lpp` object.", call. = FALSE)
@@ -145,6 +151,8 @@ prepare_gbpp_network <- function(
     locations = U,
     quadrature_weight = v,
     dummy_intensity = rep(dummy_intensity, length(y)),
+    statistical_weight = statistical_weight,
+    interaction_integral = interaction_integral,
     window = point_pattern$domain,
     type = "network",
     metadata = list(

@@ -4,7 +4,13 @@
 \alias{prepare_gbpp_network}
 \title{Prepare a GBPP network data object}
 \usage{
-prepare_gbpp_network(point_pattern, covariates = list(), nd = 1000L)
+prepare_gbpp_network(
+  point_pattern,
+  covariates = list(),
+  nd = 1000L,
+  statistical_weight = NULL,
+  interaction_integral = NULL
+)
 }
 \arguments{
 \item{point_pattern}{An \code{lpp} object containing the observed points.}
@@ -15,6 +21,11 @@ covariates are supported.}
 
 \item{nd}{Number of dummy quadrature points per network segment, as used by
 \code{\link[spatstat.linnet:linequad]{spatstat.linnet::linequad()}}.}
+
+\item{statistical_weight}{Optional numeric vector of custom statistical weights.}
+
+\item{interaction_integral}{Optional numeric vector or scalar of spatial interaction
+integrals for iteratively weighted objectives.}
 }
 \value{
 A \code{gbpp_data} object with \code{type = "network"}.

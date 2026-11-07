@@ -76,3 +76,39 @@ print.gbpp_data <- function(x, ...) {
   cat("Interaction int.   :", if (!is.null(x$interaction_integral)) "Present" else "None", "\n")
   invisible(x)
 }
+
+#' Attach statistical weights to a GBPP data object
+#'
+#' Attaches custom statistical weights (e.g., from pilot kernel estimates,
+#' local LISA summary statistics, or inverse probability weighting) to an
+#' existing `gbpp_data` object for use with weighted objectives
+#' (`"weighted_poisson"` or `"weighted_logistic"`).
+#'
+#' @param data A `gbpp_data` object.
+#' @param weights A numeric vector of positive weights with length equal to
+#'   the total number of observations (`length(data$y)`).
+#'
+#' @return The modified `gbpp_data` object with `statistical_weight` attached.
+#' @export
+attach_statistical_weight <- function(data, weights) {
+  if (!inherits(data, "gbpp_data")) {
+    stop("`data` must be a `gbpp_data` object.", call. = FALSE)
+  }
+
+  if (!is.numeric(weights) || length(weights) != length(data$y)) {
+    stop(
+      "`weights` must be a numeric vector with length equal to the number of quadrature points.",
+      call. = FALSE
+    )
+  }
+
+  if (any(!is.finite(weights)) || any(weights <= 0)) {
+    stop(
+      "`weights` must contain only strictly positive finite values.",
+      call. = FALSE
+    )
+  }
+
+  data$statistical_weight <- weights
+  data
+}

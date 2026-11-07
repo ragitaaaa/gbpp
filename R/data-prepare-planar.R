@@ -19,6 +19,11 @@
 #' @param objective Optional objective name (e.g. `"poisson"` or `"logistic"`). If supplied
 #'   and `quadrature_method` is omitted, automatically aligns the quadrature scheme:
 #'   `"logistic"` for logistic objectives and `"berman_turner"` for Poisson objectives.
+#' @param statistical_weight Optional numeric vector of custom statistical weights
+#'   (e.g., from pilot estimation, local LISA statistics, or IPW). Must match the
+#'   total number of quadrature points.
+#' @param interaction_integral Optional numeric vector or scalar of spatial interaction
+#'   integrals for iteratively weighted objectives.
 #' @param ... Additional arguments passed to [spatstat.geom::quadscheme()] or
 #'   [spatstat.geom::quadscheme.logi()].
 #'
@@ -31,6 +36,8 @@ prepare_gbpp <- function(
     quadrature_method = c("berman_turner", "logistic"),
     dummytype = c("grid", "poisson"),
     objective = NULL,
+    statistical_weight = NULL,
+    interaction_integral = NULL,
     ...
 ) {
   if (!inherits(point_pattern, "ppp")) {
@@ -185,6 +192,8 @@ prepare_gbpp <- function(
     locations = locations,
     quadrature_weight = v,
     dummy_intensity = dummy_intensity,
+    statistical_weight = statistical_weight,
+    interaction_integral = interaction_integral,
     window = point_pattern$window,
     type = "planar",
     metadata = list(

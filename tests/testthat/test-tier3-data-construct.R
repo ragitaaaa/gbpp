@@ -183,3 +183,32 @@ test_that("iterative Logistic requires interaction_integral", {
     "`interaction_integral` is required"
   )
 })
+
+test_that("attach_statistical_weight attaches and validates weights correctly", {
+
+  data <- new_gbpp_data(
+    X = data.frame(x1 = c(1, 2)),
+    y = c(1, 0),
+    locations = data.frame(x = c(0, 1), y = c(0, 1)),
+    quadrature_weight = c(0.5, 0.5)
+  )
+
+  expect_error(
+    attach_statistical_weight(list(), c(1, 1)),
+    "`data` must be a `gbpp_data` object"
+  )
+
+  expect_error(
+    attach_statistical_weight(data, c(1, 1, 1)),
+    "number of quadrature points"
+  )
+
+  expect_error(
+    attach_statistical_weight(data, c(-1, 1)),
+    "strictly positive"
+  )
+
+  data_wt <- attach_statistical_weight(data, c(0.8, 1.2))
+  expect_equal(data_wt$statistical_weight, c(0.8, 1.2))
+  expect_true(validate_gbpp_data(data_wt, objective = "weighted_poisson"))
+})
